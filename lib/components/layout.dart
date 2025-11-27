@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Theme;
 import 'package:flutter_application_1/components/app_view.dart';
-import 'package:flutter_application_1/components/view_container.dart';
+import 'package:flutter_application_1/core/game/board.dart';
+import 'package:flutter_application_1/core/game/word_search_themes.dart';
 import 'package:flutter_application_1/screens/multiplayer/multiplayer.dart';
 import 'package:flutter_application_1/screens/singleplayer/singleplayer.dart';
 class Layout extends StatefulWidget {
@@ -12,6 +13,7 @@ class Layout extends StatefulWidget {
 
 class _Layout extends State<Layout> {
   int selected = 0;
+  Board? board;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,24 +40,43 @@ class _Layout extends State<Layout> {
       body: IndexedStack(
         index: selected,
         children: [
-          ViewContainer(
-            child: SingleplayerScreen()
+          AppView(
+            title: "Modo Un Jugador",
+            subtitle: (board != null) ? board?.theme.theme : "Presiona el botón para iniciar el juego",
+            footer: (board != null) ? ElevatedButton(
+              onPressed: (){
+                setState((){
+                    board= null;
+                  }
+                );
+              },
+              child: Text("Reiniciar Juego"),
+            ) : null,
+            child: (board != null) ? SinglePlayerScreen(board: board!)
+            : ElevatedButton(
+              onPressed: (){
+                setState((){
+                    board= Board(row: 10, col:10, theme: Themes.selectTheme());
+                  }
+                );
+              },
+              child: Text("Iniciar Juego"),
+            ),
           ),
-          ViewContainer(
+          AppView(
+            title: "Modo Multijugador",
             child: MultiplayerScreen()
           ),
-          ViewContainer(
-            child: 
-              AppView(
-                title: "Perfil de usuario",
-                footer: ElevatedButton(
-                  onPressed: () {},
-                  child: Text("Cerrar sesión"),
-                )
-              )
+          AppView(
+            title: "Perfil de usuario",
+            footer: ElevatedButton(
+              onPressed: () {},
+              child: Text("Cerrar sesión"),
+            )
+          )
             
-          ),
         ],
+        
       ),
       bottomNavigationBar: BottomNavigationBar(
       showUnselectedLabels: false,
@@ -63,6 +84,7 @@ class _Layout extends State<Layout> {
       onTap: (index) {
         setState(() {
           selected = index;
+  
         });
       },
       items: const [

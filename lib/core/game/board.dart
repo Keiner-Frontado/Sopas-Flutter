@@ -30,7 +30,7 @@ class Cell {
 class Board {
   final int row;
   final int col;
-  final Theme theme;
+  late Theme theme;
   late List<List<Cell>> board;
   List<String> foundWords = [];
   List<Cell> selectedCells = [];
@@ -58,49 +58,55 @@ class Board {
       [-1, 1],
       [-1, -1],
     ];
+    try{
+      for (final word in theme.words) {
+        
+        if (word.isEmpty) continue;
 
-    for (final word in theme.words) {
-      
-      if (word.isEmpty) continue;
+        bool placed = false;
 
-      bool placed = false;
+        // Intentos máximos para colocar una palabra
+        for (int attempt = 0; attempt < 500 && !placed; attempt++) {
+          final dir = dirs[rnd.nextInt(dirs.length)];
+          final startRow = rnd.nextInt(row);
+          final startCol = rnd.nextInt(col);
 
-      // Intentos máximos para colocar una palabra
-      for (int attempt = 0; attempt < 500 && !placed; attempt++) {
-        final dir = dirs[rnd.nextInt(dirs.length)];
-        final startRow = rnd.nextInt(row);
-        final startCol = rnd.nextInt(col);
+          int r = startRow;
+          int c = startCol;
+          int i;
 
-        int r = startRow;
-        int c = startCol;
-        int i;
-
-        // Verificar si la palabra cabe en la posición y dirección seleccionadas
-        for (i = 0; i < word.length; i++) {
-          if (r < 0 || r >= row || c < 0 || c >= col) break;
-          if (board[r][c].letter != '' && board[r][c].letter != word[i]) break;
-          r += dir[0];
-          c += dir[1];
-        }
-
-        if (i == word.length) {
-          // Colocar la palabra en el tablero
-          r = startRow;
-          c = startCol;
-          for (int j = 0; j < word.length; j++) {
-            board[r][c].letter = word[j];
+          // Verificar si la palabra cabe en la posición y dirección seleccionadas
+          for (i = 0; i < word.length; i++) {
+            if (r < 0 || r >= row || c < 0 || c >= col) break;
+            if (board[r][c].letter != '' && board[r][c].letter != word[i]) break;
             r += dir[0];
             c += dir[1];
           }
-          placed = true;
+
+          if (i == word.length) {
+            // Colocar la palabra en el tablero
+            r = startRow;
+            c = startCol;
+            for (int j = 0; j < word.length; j++) {
+              board[r][c].letter = word[j];
+              r += dir[0];
+              c += dir[1];
+            }
+            placed = true;
+          }
+        }
+
+        if (!placed) {
+          throw Exception('No se pudo colocar la palabra "$word" en el tablero tras múltiples intentos.');
         }
       }
-
-      if (!placed) {
-        throw Exception('No se pudo colocar la palabra "$word" en el tablero tras múltiples intentos.');
-      }
+    } catch (e) {
+      // ignore: avoid_print
+      print(e);
+      theme = Themes.selectTheme();
+      createBoard();
+      return;
     }
-
     // Rellenar espacios vacíos con letras aleatorias
     const letters = 'abcdefghijklmnopqrstuvwxyz';
     for (int r = 0; r < row; r++) {
