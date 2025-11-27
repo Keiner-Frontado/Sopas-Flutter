@@ -5,8 +5,8 @@ import 'colors.dart' as app_colors;
 class Styles {
   // AppBar
   static final appBarTitle = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
     color: app_colors.Colors.onPrimary,
   );
 
@@ -26,7 +26,7 @@ class Styles {
   // Botones (texto)
   static final buttonText = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     color: app_colors.Colors.onPrimary,
   );
 
@@ -69,13 +69,13 @@ class Styles {
   // Buttons (variantes)
   static final buttonPrimaryText = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     color: app_colors.Colors.onPrimary,
   );
 
   static final buttonSecondaryText = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     color: app_colors.Colors.primary,
   );
 
@@ -117,10 +117,18 @@ class AppTheme {
 
       // AppBar
       appBarTheme: AppBarTheme(
+        toolbarHeight: 40,
         backgroundColor: app_colors.Colors.primaryLight,
         titleTextStyle: Styles.appBarTitle,
-        
-        iconTheme: IconThemeData(color: app_colors.Colors.onPrimary),
+        shape: ShapeBorder .lerp(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          null,
+          0,
+        ),
+        iconTheme: IconThemeData(size: 24, color: app_colors.Colors.onPrimary),
+        actionsPadding: EdgeInsetsGeometry.only(right: 8),
         elevation: 0,
       ),
 
@@ -144,7 +152,8 @@ class AppTheme {
           backgroundColor: app_colors.Colors.buttonPrimary,
           foregroundColor: app_colors.Colors.buttonText,
           textStyle: Styles.buttonPrimaryText,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          fixedSize: Size.fromHeight(38),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
 
@@ -173,18 +182,18 @@ class AppTheme {
         hintStyle: Styles.inputHint,
         labelStyle: Styles.inputLabel,
         helperStyle: Styles.inputLabel,
-        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: app_colors.Colors.outline),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(color: app_colors.Colors.primary, width: 2),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         errorBorder: OutlineInputBorder(
           borderSide: BorderSide(color: app_colors.Colors.error),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
 

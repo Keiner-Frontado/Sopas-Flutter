@@ -15,9 +15,8 @@ class MainApp extends StatelessWidget {
       title: "App",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: Scaffold(
-        body: Layout(),
-      ),
+      home: Layout(),
+      
     );
   }
 }

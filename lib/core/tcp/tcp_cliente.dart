@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_application_1/core/tcp/client.dart';
 
 /*
 / TcpClientManager contiene la lógica del cliente TCP separada del servidor.
@@ -12,7 +13,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 / - dispose()
 */
 class TcpClientManager {
-  Socket? _clientSocket;
+
+  Client? client;
 
   final StreamController<String> _logController = StreamController.broadcast();
 
@@ -30,28 +32,31 @@ class TcpClientManager {
       return;
     }
 
-    if (_clientSocket != null) {
-      _log('Cliente ya conectado a ${_clientSocket!.remoteAddress.address}:${_clientSocket!.remotePort}');
+    if (client != null) {
+      _log('Cliente ya conectado a ${client!.ip}:${client!.port}');
       return;
     }
 
     try {
-      _clientSocket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
+      Socket clientSocket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
       _log('Cliente conectado a $host:$port');
+      client = Client(clientSocket);
 
-      _clientSocket!.listen((data) {
+      client!.stream
+      .transform(LineSplitter())
+      .listen((String dataString) {
         try {
-          final message = utf8.decode(data);
-          _log('Respuesta servidor -> $message');
+          final data = jsonDecode(dataString) as Map<String, dynamic>;
+          _log('Respuesta servidor -> ${data.toString()}');
         } catch (e) {
           _log('Error decodificando respuesta: $e');
         }
       }, onDone: () {
         _log('Conexión del cliente cerrada por el servidor');
-        _clientSocket = null;
+        client!.disconnect();
       }, onError: (err) {
         _log('Error en socket cliente: $err');
-        _clientSocket = null;
+        client!.disconnect();
       });
     } catch (e) {
       _log('No se pudo conectar al servidor $host:$port - $e');
@@ -60,37 +65,36 @@ class TcpClientManager {
   }
 
   /// Envía un mensaje (string) desde el cliente conectado.
-  Future<void> enviar(String message) async {
-    if (_clientSocket == null) {
+  Future<void> enviar(Map<String,dynamic> msgData) async {
+    if (client == null) {
       _log('No hay cliente conectado para enviar mensaje');
       return;
     }
 
     try {
-      final bytes = utf8.encode(message);
-      _clientSocket!.add(bytes);
-      _log('Enviado desde cliente: $message');
+      client!.send(msgData);
+      _log('Enviado desde cliente: ${msgData.toString()}');
     } catch (e) {
       _log('Error enviando mensaje: $e');
     }
   }
 
   /// Cierra la conexión del cliente si existe.
-  Future<void> desconectar() async {
-    if (_clientSocket == null) return;
+  void desconectar() async {
+    if (client == null) return;
     try {
-      await _clientSocket?.close();
+      await client!.disconnect();
       _log('Cliente desconectado manualmente');
     } catch (e) {
       _log('Error cerrando socket cliente: $e');
     } finally {
-      _clientSocket = null;
+      client = null;
     }
   }
 
   /// Limpia recursos internos.
   Future<void> dispose() async {
-    await desconectar();
+    desconectar();
     await _logController.close();
   }
 }

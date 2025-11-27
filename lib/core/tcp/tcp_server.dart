@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_application_1/core/tcp/client.dart';
 /*
 * TcpServerManager simula la lógica básica de un servidor TCP para pruebas.
 * Expone métodos en español solicitados por el usuario:
@@ -11,9 +12,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 * Nota: La lógica del cliente (conectar/enviar) se ha extraído a
 * `lib/core/tcp_cliente.dart` para separar responsabilidades.
 */
+
+
 class TcpServerManager {
   ServerSocket? _server;
-  final List<Socket> _clients = [];
+  final List<Client> _clients = [];
 
   final StreamController<String> _logController = StreamController.broadcast();
 
@@ -56,31 +59,11 @@ class TcpServerManager {
 
       _log('Servidor iniciado en ${_server!.address.address}:${_server!.port}');
 
-      _server!.listen( (Socket client) {
-        _clients.add(client);
-        _log('Cliente conectado desde ${client.remoteAddress.address}:${client.remotePort}');
-
-        client.listen((data) {
-          try {
-            final message = utf8.decode(data);
-            _log('Recibido de ${client.remoteAddress.address}:${client.remotePort} -> $message');
-            for (var c in _clients) {
-              if (c != client) {
-                c.add(utf8.encode('Mensaje de ${client.remoteAddress.address}:${client.remotePort} -> $message'));
-              }
-            }
-            // Echo para que el cliente vea respuesta
-            client.add(utf8.encode('ECHO: Mensaje enviado.'));
-          } catch (e) {
-            _log('Error decodificando datos: $e');
-          }
-        }, onDone: () {
-          _log('Cliente desconectado ${client.remoteAddress.address}:${client.remotePort}');
-          _clients.remove(client);
-        }, onError: (err) {
-          _log('Error en cliente ${client.remoteAddress.address}:${client.remotePort}: $err');
-          _clients.remove(client);
-        });
+      _server!
+      .listen( (Socket client) {
+        
+        _manageClient(client);
+        
       }, onError: (err) {
         _log('Error en ServerSocket: $err');
       });
@@ -92,9 +75,9 @@ class TcpServerManager {
 
   /// Cierra el servidor y todos los clientes conectados.
   Future<void> cerrarConexion() async {
-    for (final c in List<Socket>.from(_clients)) {
+    for (final c in _clients) {
       try {
-        c.close();
+        c.disconnect();
       } catch (_) {}
     }
     _clients.clear();
@@ -117,5 +100,47 @@ class TcpServerManager {
   Future<void> dispose() async {
     await cerrarConexion();
     await _logController.close();
+  }
+
+  void _manageClient(Socket clientSocket) {
+
+    final client = Client(clientSocket);
+    _clients.add(client);
+    _log('Cliente conectado desde ${client.ip}:${client.port}');
+
+    client.stream
+    .transform(LineSplitter())
+    .listen((String dataString) {
+      try {
+
+        final data = jsonDecode(dataString) as Map<String, dynamic>;
+
+        _log('Mensaje de ${client.name} -> ${data.toString()}');
+
+        for (var c in _clients) {
+          if (c == client) continue;
+
+          c.send({
+            ...data
+          });
+        
+        }
+        // Echo para que el cliente vea respuesta
+        client.send({
+          'from': "server",
+          'msg': "Mensaje enviado."
+          });
+
+      } catch (e) {
+        _log('Error decodificando datos: $e');
+      }
+    }, onDone: () {
+      _log('Cliente desconectado ${client.ip}:${client.port}');
+      _clients.remove(client);
+    }, onError: (err) {
+      _log('Error en cliente ${client.ip}:${client.port}: $err');
+      _clients.remove(client);
+    });
+      
   }
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/view_container.dart';
-import 'package:flutter_application_1/screens/multiplayer.dart';
-import 'package:flutter_application_1/screens/singleplayer.dart';
-
+import 'package:flutter_application_1/screens/multiplayer/multiplayer.dart';
+import 'package:flutter_application_1/screens/singleplayer/singleplayer.dart';
 class Layout extends StatefulWidget {
   const Layout({super.key});
 
@@ -36,29 +35,28 @@ class _Layout extends State<Layout> {
           ]),
         ],
       ),
-      body: switch (selected) {
-        0 => ViewContainer(
-          child: [SingleplayerScreen()]
-        ),
-        1 => ViewContainer(
-          child: [MultiplayerScreen()]
-        ),
-        2 => ViewContainer(
-          child: [
-            AppView(
-              title: "Perfil de usuario",
-            )
-          ]
-        ),
-        _ => ViewContainer(
-          child: [
-            AppView(
-              title: "404 - Página no encontrada",
-              subtitle: "Cómo llegaste aquí ._?",
-            )
-          ]
-        )
-      },
+      body: IndexedStack(
+        index: selected,
+        children: [
+          ViewContainer(
+            child: SingleplayerScreen()
+          ),
+          ViewContainer(
+            child: MultiplayerScreen()
+          ),
+          ViewContainer(
+            child: 
+              AppView(
+                title: "Perfil de usuario",
+                footer: ElevatedButton(
+                  onPressed: () {},
+                  child: Text("Cerrar sesión"),
+                )
+              )
+            
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
       showUnselectedLabels: false,
       currentIndex: selected,
