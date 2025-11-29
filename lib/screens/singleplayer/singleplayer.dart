@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
+import 'package:flutter_application_1/components/chip_row.dart';
 import 'package:flutter_application_1/core/constants/game_themes.dart';
 import 'package:flutter_application_1/core/constants/styles.dart';
 import 'package:flutter_application_1/core/models/board.dart';
@@ -16,13 +17,26 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   
   late Board? board;
 
+  Widget _setTitle(){
+    if (board == null) return Text("UN JUGADOR", style: Styles.titleText);
+    return Text(
+      board!.getThemeName(),
+      style: Styles.titleText
+    );
+  }
+
   Widget _setSubtitle() {
     
     if (board != null) {
-      return Text(
-        board!.getThemeName(),
-        style: Styles.text
-        );
+      return Column(
+        children: [
+        ChipRow(
+          buttonTexts: board!.theme.words
+              .where((w) => !board!.foundWords.contains(w))
+              .toList(),
+        ),
+        ]
+      );
     } else {
       return Text(
         "Presiona el botón para iniciar el juego.",
@@ -68,7 +82,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   @override
   Widget build(BuildContext context) {
     return AppView(
-      title: Text("UN JUGADOR", style: Styles.titleText),
+      title: _setTitle(),
       subtitle: _setSubtitle(),
       footer: _setFooter(),
       child: _setChild(),
