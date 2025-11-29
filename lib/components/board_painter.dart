@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/game/board.dart';
+import 'package:flutter_application_1/core/models/board.dart';
 
 class BoardPainter extends CustomPainter {
   
   Board board;
   late double cellWidth;
   late double cellHeight;
-
-
 
   BoardPainter({required this.board}) : super(repaint: board);
 
@@ -47,13 +45,11 @@ class BoardPainter extends CustomPainter {
       double left = cell.col * cellWidth;
       double top = cell.row * cellHeight;
 
-      // Dibuja cada celda
-      canvas.drawRect(
-        Rect.fromLTWH(
-          left, top,
-          cellWidth, cellHeight),
-          cellPaint
-      );
+      // Dibuja un círculo centrado en la celda
+      final center = Offset(left + cellWidth / 2, top + cellHeight / 2);
+      final radius = (cellWidth < cellHeight ? cellWidth : cellHeight) * 0.45;
+
+      canvas.drawCircle(center, radius, cellPaint);
 
       // Dibuja la letra de la celda
       final textPainter = TextPainter(

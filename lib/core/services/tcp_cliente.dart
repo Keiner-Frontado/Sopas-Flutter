@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_application_1/core/tcp/client.dart';
+import 'package:flutter_application_1/core/models/client.dart';
 
 /*
 / TcpClientManager contiene la lógica del cliente TCP separada del servidor.

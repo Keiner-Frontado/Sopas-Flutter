@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/game/board.dart';
+import 'package:flutter_application_1/core/models/board.dart';
 
 class GamePainter extends CustomPainter {
   final Board board;

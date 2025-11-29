@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/styles.dart' as app_styles;
-import 'package:flutter_application_1/core/tcp/tcp_cliente.dart';
-import 'package:flutter_application_1/core/tcp/tcp_server.dart';
+import 'package:flutter_application_1/core/constants/styles.dart' as app_styles;
+import 'package:flutter_application_1/core/services/tcp_cliente.dart';
+import 'package:flutter_application_1/core/services/tcp_server.dart';
 
 class ServerScreen extends StatefulWidget {
   const ServerScreen({super.key});

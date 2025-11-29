@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/colors.dart' as app_colors;
+import 'package:flutter_application_1/core/constants/colors.dart' as app_colors;
 
 class ViewContainer extends StatefulWidget {
   

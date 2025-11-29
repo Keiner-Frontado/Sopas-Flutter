@@ -1,7 +1,7 @@
 
-import 'package:flutter_application_1/core/game/board.dart';
-import 'package:flutter_application_1/core/game/player.dart';
-import 'package:flutter_application_1/core/game/word_search_themes.dart';
+import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/models/player.dart';
+import 'package:flutter_application_1/core/constants/game_themes.dart';
 
 class Game {
 

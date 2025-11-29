@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_application_1/core/tcp/client.dart';
+import 'package:flutter_application_1/core/models/client.dart';
 /*
 * TcpServerManager simula la lógica básica de un servidor TCP para pruebas.
 * Expone métodos en español solicitados por el usuario:

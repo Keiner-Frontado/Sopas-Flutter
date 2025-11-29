@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart' hide Theme;
-import 'package:flutter_application_1/core/game/word_search_themes.dart';
+import 'package:flutter_application_1/core/constants/game_themes.dart';
 
 class Cell {
   final int row, col;
@@ -46,6 +46,10 @@ class Board extends ChangeNotifier{
   
   void notify() {
     notifyListeners();
+  }
+
+  String getThemeName(){
+    return theme.theme;
   }
 
   void createBoard() {
