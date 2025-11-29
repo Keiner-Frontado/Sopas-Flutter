@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/material.dart' hide Theme;
 import 'package:flutter_application_1/core/game/word_search_themes.dart';
 
 class Cell {
@@ -27,7 +28,7 @@ class Cell {
 
 }
 
-class Board {
+class Board extends ChangeNotifier{
   final int row;
   final int col;
   late Theme theme;
@@ -35,10 +36,16 @@ class Board {
   List<String> foundWords = [];
   List<Cell> selectedCells = [];
   String selectedWord = '';
+  // Guarda el estado previo de isSelected para celdas (clave 'r:c')
+  final Map<String, bool> prevIsSelected = {};
 
 
   Board({required this.row, required this.col, required this.theme}) {
     createBoard();
+  }
+  
+  void notify() {
+    notifyListeners();
   }
 
   void createBoard() {
@@ -118,29 +125,45 @@ class Board {
     }
   }
 
+  bool isCellSelected(int r, int c) {
+    return selectedCells.any((cell) => cell.row == r && cell.col == c);
+  }
+
+  Cell getCell(int r, int c) {
+    if (r < 0 || r >= row || c < 0 || c >= col) {
+      throw Exception('Coordenadas de celda inválidas: ($r, $c).');
+    }
+    return board[r][c];
+  }
+
   void selectCell(int r, int c) {
     if (r < 0 || r >= row || c < 0 || c >= col) {
       throw Exception('Coordenadas de celda inválidas: ($r, $c).');
     }
+    final key = '$r:$c';
+    // Guardar estado previo antes de cambiar
+    prevIsSelected[key] = board[r][c].isSelected;
     selectedCells.add(board[r][c].copy());
     selectedWord += board[r][c].letter;
     board[r][c].isSelected = true;
-
   }
 
   bool foundWord() {
     
-    if (!theme.words.contains(selectedWord)) {
-      throw Exception('La palabra "$selectedWord" no está en la lista de palabras del tema.');
-    }
-    if (foundWords.contains(selectedWord)) {
-      throw Exception('La palabra "$selectedWord" ya ha sido encontrada.');
-    }
-
     final List<bool> prevIsUsed = [];
     int modified = 0;
 
     try {
+      
+      if (!theme.words.contains(selectedWord)) {
+        throw Exception('La palabra "$selectedWord" no está en la lista de palabras del tema.');
+      }
+      if (foundWords.contains(selectedWord)) {
+        throw Exception('La palabra "$selectedWord" ya ha sido encontrada.');
+      }
+
+      
+
       for(final (i, cell) in selectedCells.indexed) {
 
       final r = cell.row;
@@ -171,7 +194,7 @@ class Board {
         if (rr < 0 || rr >= row || cc < 0 || cc >= col) continue;
         board[rr][cc].isUsed = prevIsUsed[j];
       }
-      return false;
+      rethrow;
 
     } finally {
       deselectCells();
@@ -185,13 +208,19 @@ class Board {
   void deselectCells(){
     // Siempre deseleccionar las celdas recibidas
       for (final cell in selectedCells) {
-      final r = cell.row;
-      final c = cell.col;
-      if (r < 0 || r >= row || c < 0 || c >= col) continue;
-      board[r][c].isSelected = false;
+        final r = cell.row;
+        final c = cell.col;
+        if (r < 0 || r >= row || c < 0 || c >= col) continue;
+        board[r][c].isSelected = false;
       }
       selectedCells.clear();
       selectedWord = '';
+      prevIsSelected.clear();
+  }
+
+  updateSelectedCells(List<Cell> selectedCells) {
+    this.selectedCells = selectedCells;
+    notify();
   }
 
   printBoard() {

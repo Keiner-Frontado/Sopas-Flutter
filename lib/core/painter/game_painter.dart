@@ -1,30 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/game/board.dart';
 
 class GamePainter extends CustomPainter {
-  final List<dynamic> gameData;
-  const GamePainter({
-    this.gameData = const [],
-  });
+  final Board board;
+
+  GamePainter({required this.board}) : super(repaint: board);
+
+  Size? lastSize;
+
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Aquí va la lógica para pintar el juego sobre el tablero
-    final paint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.stroke;
+    lastSize = size;
+    if (board.selectedCells.isEmpty) return;
 
+    final cellW = size.width / board.col;
+    final cellH = size.height / board.row;
 
-    // Dibuja un círculo rojo en el centro del canvas
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      (size.width > size.height ? size.height : size.width)/2.2,
-      paint
-    );
+    final points = board.selectedCells
+        .map((cell) => Offset(cell.col * cellW + cellW / 2, cell.row * cellH + cellH / 2))
+        .toList();
+
+    if (points.length > 1) {
+      final linePaint = Paint()
+        ..color = Colors.blueAccent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.bevel;
+
+      final path = Path();
+      path.moveTo(points[0].dx, points[0].dy);
+      for (int i = 1; i < points.length; i++) {
+        path.lineTo(points[i].dx, points[i].dy);
+      }
+      canvas.drawPath(path, linePaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

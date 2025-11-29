@@ -4,30 +4,44 @@ import 'package:flutter_application_1/core/game/board.dart';
 class BoardPainter extends CustomPainter {
   
   Board board;
+  late double cellWidth;
+  late double cellHeight;
 
-  BoardPainter({required this.board});
+
+
+  BoardPainter({required this.board}) : super(repaint: board);
+
+  double getWidth() {
+    return cellWidth;
+  }
+
+  double getHeight() {
+    return cellHeight;
+  }
+
 
   @override
   void paint(Canvas canvas, Size size) {
     // Aquí va la lógica para pintar el tablero
-    final paint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.fill;
+    // final paint = Paint()
+    //   ..color = Colors.blue
+    //   ..style = PaintingStyle.fill;
 
-    double cellWidth = size.width / board.col;
-    double cellHeight = size.height / board.row;
+    cellWidth = size.width / board.col;
+    cellHeight = size.height / board.row;
+    
 
     // Dibuja un rectángulo azul que cubre todo el canvas
-    canvas.drawRect(
-      Rect.fromLTWH(
-        0, 0,
-        size.width, size.height),
-        paint
-    );
+    // canvas.drawRect(
+    //   Rect.fromLTWH(
+    //     0, 0,
+    //     size.width, size.height),
+    //     paint
+    // );
 
     for (final cell in board.board.expand((e) => e)) {
       final cellPaint = Paint()
-        ..color = cell.isSelected ? Colors.yellow : Colors.white
+        ..color = cell.isUsed ? Colors.greenAccent : cell.isSelected ? Colors.yellowAccent : Colors.white
         ..style = PaintingStyle.fill;
 
       double left = cell.col * cellWidth;
@@ -47,7 +61,7 @@ class BoardPainter extends CustomPainter {
           text: cell.letter,
           style: TextStyle(
             color: Colors.black,
-            fontSize: cellHeight * 0.6,
+            fontSize: cellHeight * 0.5,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -71,3 +85,6 @@ class BoardPainter extends CustomPainter {
     return false;
   }
 }
+
+
+
