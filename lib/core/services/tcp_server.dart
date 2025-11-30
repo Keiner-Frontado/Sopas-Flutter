@@ -19,7 +19,6 @@ class TcpServerManager {
   final List<Client> _clients = [];
 
   final StreamController<String> _logController = StreamController.broadcast();
-
   Stream<String> get onLog => _logController.stream;
 
   void _log(String message) {
@@ -29,7 +28,7 @@ class TcpServerManager {
   }
 
   /// Crea y arranca el servidor TCP en el puerto indicado.
-  Future<void> crearConexion(int port, {bool bindAny = false}) async {
+  Future<void> crearConexion(int port, Map<String, Function(dynamic)> functions, {bool bindAny = false}) async {
 
     if (kIsWeb) {
       _log('No es posible iniciar un ServerSocket en Flutter Web. Operación ommitida.');
@@ -60,11 +59,14 @@ class TcpServerManager {
       _log('Servidor iniciado en ${_server!.address.address}:${_server!.port}');
 
       _server!
-      .listen( (Socket client) {
+      .listen((Socket client) {
         
-        _manageClient(client);
+        _manageClient(client, functions['onListen'] );
         
-      }, onError: (err) {
+      },
+      onDone:() {} ,
+      
+      onError: (err) {
         _log('Error en ServerSocket: $err');
       });
     } catch (e) {
@@ -102,7 +104,7 @@ class TcpServerManager {
     await _logController.close();
   }
 
-  void _manageClient(Socket clientSocket) {
+  void _manageClient(Socket clientSocket, void Function(Map data)? onListen) {
 
     final client = Client(clientSocket);
     _clients.add(client);
@@ -115,22 +117,8 @@ class TcpServerManager {
 
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
-        _log('Mensaje de ${client.name} -> ${data.toString()}');
-
-        for (var c in _clients) {
-          if (c == client) continue;
-
-          c.send({
-            ...data
-          });
+        if (onListen != null) onListen(data);
         
-        }
-        // Echo para que el cliente vea respuesta
-        client.send({
-          'from': "server",
-          'msg': "Mensaje enviado."
-          });
-
       } catch (e) {
         _log('Error decodificando datos: $e');
       }
@@ -143,4 +131,22 @@ class TcpServerManager {
     });
       
   }
+
+
+  // _log('Mensaje de ${client.name} -> ${data.toString()}');
+
+  //       for (var c in _clients) {
+  //         if (c == client) continue;
+
+  //         c.send({
+  //           ...data
+  //         });
+        
+  //       }
+  //       // Echo para que el cliente vea respuesta
+  //       client.send({
+  //         'from': "server",
+  //         'msg': "Mensaje enviado."
+  //         });
+
 }

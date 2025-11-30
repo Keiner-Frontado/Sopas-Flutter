@@ -41,7 +41,7 @@ class _AppViewState extends State<AppView> {
     return LayoutBuilder(
       builder: (builder, constraints) {
         final width = constraints.maxWidth;
-        final height = constraints.maxHeight * 0.85;
+        final height = constraints.maxHeight * 0.8;
     return Padding(
       padding: EdgeInsetsGeometry.symmetric(horizontal: 10, vertical: 10),
       child: SingleChildScrollView(

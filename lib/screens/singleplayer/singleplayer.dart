@@ -28,14 +28,18 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   Widget _setSubtitle() {
     
     if (board != null) {
-      return Column(
-        children: [
-        ChipRow(
-          buttonTexts: board!.theme.words
-              .where((w) => !board!.foundWords.contains(w))
-              .toList(),
-        ),
-        ]
+      return ListenableBuilder(
+        listenable: board!,
+        builder:(context, child){
+          return Column (
+          children: [
+            ChipRow(
+            buttonTexts: board!.theme.words
+                .where((w) => !board!.foundWords.contains(w))
+                .toList(),
+            ),
+          ]);
+        }
       );
     } else {
       return Text(
