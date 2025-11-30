@@ -21,14 +21,19 @@ class TcpServerManager {
   final StreamController<String> _logController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
 
+  final Map<String, Function> functions;
+
+  TcpServerManager(this.functions);
+
+
   void _log(String message) {
     final ts = DateTime.now().toLocal();
 
-    _logController.add('[ *SERVIDOR* (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})] $message');
+    _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
 
   /// Crea y arranca el servidor TCP en el puerto indicado.
-  Future<void> crearConexion(int port, Map<String, Function(dynamic)> functions, {bool bindAny = false}) async {
+  Future<void> crearConexion(int port, {bool bindAny = false}) async {
 
     if (kIsWeb) {
       _log('No es posible iniciar un ServerSocket en Flutter Web. Operación ommitida.');
@@ -59,15 +64,24 @@ class TcpServerManager {
       _log('Servidor iniciado en ${_server!.address.address}:${_server!.port}');
 
       _server!
-      .listen((Socket client) {
-        
-        _manageClient(client, functions['onListen'] );
-        
-      },
-      onDone:() {} ,
+      .listen((Socket client) {  
+        _manageClient(client);
       
+      },
+      onDone:() {
+        if (functions['serverOnDone'] != null){
+          final func = functions['serverOnDone']!;
+          func( );
+        }
+      } ,
       onError: (err) {
-        _log('Error en ServerSocket: $err');
+
+        if (functions['serverOnErro'] != null){
+          final func = functions['serverOnError']!;
+          func(err);
+        }
+
+        // _log('Error en ServerSocket: $err');
       });
     } catch (e) {
       _log('No se pudo iniciar el servidor: $e');
@@ -104,7 +118,7 @@ class TcpServerManager {
     await _logController.close();
   }
 
-  void _manageClient(Socket clientSocket, void Function(Map data)? onListen) {
+  void _manageClient(Socket clientSocket) {
 
     final client = Client(clientSocket);
     _clients.add(client);
@@ -117,17 +131,30 @@ class TcpServerManager {
 
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
-        if (onListen != null) onListen(data);
+        if (functions['clientOnListen'] != null){
+          final func = functions['clientOnListen']!;
+          func(data: data);
+        }
         
       } catch (e) {
         _log('Error decodificando datos: $e');
       }
     }, onDone: () {
-      _log('Cliente desconectado ${client.ip}:${client.port}');
-      _clients.remove(client);
+      if (functions['clientOnDone'] != null){
+        final func = functions['clientOnDone']!;
+        func( );
+      }
+
+    //   _log('Cliente desconectado ${client.ip}:${client.port}');
+    //   _clients.remove(client);
     }, onError: (err) {
-      _log('Error en cliente ${client.ip}:${client.port}: $err');
-      _clients.remove(client);
+
+      if (functions['clientOnError'] != null){
+        final onError = functions['clientOnError']!;
+        onError(err);
+      }
+      // _log('Error en cliente ${client.ip}:${client.port}: $err');
+      // _clients.remove(client);
     });
       
   }
