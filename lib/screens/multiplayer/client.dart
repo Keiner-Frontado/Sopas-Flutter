@@ -20,17 +20,21 @@ class _ClientScreenState extends State<ClientScreen> {
   final ipController = TextEditingController(text: '127.0.0.1');
   final portController = TextEditingController(text: '4040');
 
+  StreamSubscription<Map>? _dataSub;
   StreamSubscription<String>? _logSub;
-  StreamSubscription<String>? _logSubClient;
 
   bool _clientConnected = false;
 
     @override
   void initState() {
     super.initState();
+    _dataSub = _tcpClient.onData.listen((data) {
+      /// AQUI VA LA LOGICA DE QUE HACER CUANDO SE RECIBA UN DATO DE JUEGO
+      // ignore: avoid_print
+      print(data.toString());
+    });
 
-    // Subscribe to client logs too so both server and client logs appear
-    _logSubClient = _tcpClient.onLog.listen((log) {
+    _logSub = _tcpClient.onLog.listen((log) {
       final previous = _logsController.text;
       final updated = previous.isEmpty ? log : '$previous \n $log';
       setState(() {
@@ -42,7 +46,7 @@ class _ClientScreenState extends State<ClientScreen> {
   @override
   void dispose() {
     _logSub?.cancel();
-    _logSubClient?.cancel();
+    _dataSub?.cancel();
     _tcpClient.dispose();
     _logsController.dispose();
     ipController.dispose();

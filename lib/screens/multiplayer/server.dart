@@ -23,7 +23,9 @@ class _ServerScreenState extends State<ServerScreen> {
   final portController = TextEditingController(text: '4040');
 
   StreamSubscription<String>? _logSub;
+
   StreamSubscription<String>? _logSubClient;
+  StreamSubscription<Map>? _dataSubClient;
 
   bool _serverRunning = false;
   bool _clientConnected = false;
@@ -32,6 +34,13 @@ class _ServerScreenState extends State<ServerScreen> {
   @override
   void initState() {
     super.initState();
+
+    _dataSubClient = _tcpClient.onData.listen((data) {
+      /// AQUI VA LA LOGICA DE QUE HACER CUANDO SE RECIBA UN DATO DE JUEGO
+      // ignore: avoid_print
+      print(data.toString());
+    });
+
     _logSub = _tcp.onLog.listen((log) {
       // Append to logs TextField
       final previous = _logsController.text;
@@ -55,6 +64,7 @@ class _ServerScreenState extends State<ServerScreen> {
   void dispose() {
   _logSub?.cancel();
   _logSubClient?.cancel();
+  _dataSubClient?.cancel();
   _tcp.dispose();
   _tcpClient.dispose();
     _logsController.dispose();
