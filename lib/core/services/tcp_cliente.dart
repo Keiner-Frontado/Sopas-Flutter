@@ -17,12 +17,19 @@ class TcpClientManager {
   Client? client;
 
   final StreamController<String> _logController = StreamController.broadcast();
-
   Stream<String> get onLog => _logController.stream;
+
+  final StreamController<Map> _dataController = StreamController.broadcast();
+  Stream<Map> get onData => _dataController.stream;
 
   void _log(String message) {
     final ts = DateTime.now().toLocal();
     _logController.add('[ *CLIENTE* (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})] $message');
+  }
+
+  void _showData(Map data){
+    _dataController.add(data);
+    _log('Datos recibidos: ${data.toString()}');
   }
 
   /// Conecta como cliente a un servidor TCP remoto/local.
@@ -46,8 +53,10 @@ class TcpClientManager {
       .transform(LineSplitter())
       .listen((String dataString) {
         try {
+          
           final data = jsonDecode(dataString) as Map<String, dynamic>;
-          _log('Respuesta servidor -> ${data.toString()}');
+          _showData(data);
+
         } catch (e) {
           _log('Error decodificando respuesta: $e');
         }

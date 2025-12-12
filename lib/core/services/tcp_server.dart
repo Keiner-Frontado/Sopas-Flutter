@@ -60,7 +60,8 @@ class TcpServerManager {
       _log('Servidor iniciado en ${_server!.address.address}:${_server!.port}');
 
       _server!
-      .listen((Socket client) {  
+      .listen((Socket client) {
+
         _manageClient(client);
       
       },
@@ -77,35 +78,6 @@ class TcpServerManager {
     }
   }
 
-  /// Cierra el servidor y todos los clientes conectados.
-  Future<void> cerrarConexion() async {
-    for (final c in _clients) {
-      try {
-        c.disconnect();
-      } catch (_) {}
-    }
-    _clients.clear();
-
-    try {
-      await _server?.close();
-      if (_server != null) {
-        _log('Servidor detenido ${_server!.address.address}:${_server!.port}');
-      }
-      _server = null;
-    } catch (e) {
-      _log('Error cerrando servidor: $e');
-    }
-  }
-
-  // Note: client-related methods (conectar/enviar) have been moved to
-  // `lib/core/tcp_cliente.dart` to separate client and server responsibilities.
-
-  /// Limpia recursos internos.
-  Future<void> dispose() async {
-    await cerrarConexion();
-    await _logController.close();
-  }
-
   void _manageClient(Socket clientSocket) {
 
     final client = Client(clientSocket);
@@ -120,16 +92,14 @@ class TcpServerManager {
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');
-
-        for (var c in _clients) {
+        /// ENVIAR UNFORMACIÓN A CADA CLIENTE CONECTADO
+        for (final c in _clients) {
           if (c == client) continue;
-
           c.send({
             ...data
           });
-        
         }
-        // Echo para que el cliente vea respuesta
+        // Echo para que el cliente vea status de su envío
         client.send({
           'from': "server",
           'msg': "Mensaje enviado."
@@ -150,21 +120,33 @@ class TcpServerManager {
       
   }
 
+  /// Cierra el servidor y todos los clientes conectados.
+  Future<void> cerrarConexion() async {
+    for (final c in _clients) {
+      try {
+        c.disconnect();
+      } catch (e) {
+        _log('Error desconectando al cliente ${c.name}: $e');
+      }
+    }
+    _clients.clear();
 
-  // _log('Mensaje de ${client.name} -> ${data.toString()}');
+    try {
+      await _server?.close();
+      if (_server != null) {
+        _log('Servidor detenido ${_server!.address.address}:${_server!.port}');
+      }
+      _server = null;
+    } catch (e) {
+      _log('Error cerrando servidor: $e');
+    }
+  }
 
-  //       for (var c in _clients) {
-  //         if (c == client) continue;
+  /// Limpia recursos internos.
+  Future<void> dispose() async {
+    await cerrarConexion();
+    await _logController.close();
+  }
 
-  //         c.send({
-  //           ...data
-  //         });
-        
-  //       }
-  //       // Echo para que el cliente vea respuesta
-  //       client.send({
-  //         'from': "server",
-  //         'msg': "Mensaje enviado."
-  //         });
 
 }
