@@ -160,7 +160,8 @@ class AppTheme {
       // Text buttons
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: app_colors.Colors.primary,
+          fixedSize: Size.fromHeight(38),
+          foregroundColor: app_colors.Colors.buttonPrimary,
           textStyle: Styles.buttonSecondaryText,
         ),
       ),
@@ -168,10 +169,10 @@ class AppTheme {
       // Outlined buttons
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: app_colors.Colors.primary,
-          side: BorderSide(color: app_colors.Colors.outline),
           textStyle: Styles.buttonSecondaryText,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: BorderSide(color: app_colors.Colors.buttonPrimary),
+          fixedSize: Size.fromHeight(38),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
 
