@@ -69,7 +69,7 @@ class _ClientScreenState extends State<ClientScreen> {
   Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
-  await _tcpClient.enviar({ 'msg': text });
+    await _tcpClient.enviar({ 'msg': text });
     // Optionally show the sent message immediately in logs (it will also be logged by manager)
     final previous = _logsController.text;
     final updated = previous.isEmpty ? 'Tú: $text' : '$previous \n Tú: $text';
