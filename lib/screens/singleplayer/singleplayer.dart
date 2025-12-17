@@ -89,6 +89,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
       title: _setTitle(),
       subtitle: _setSubtitle(),
       footer: _setFooter(),
+      height: 0.75,
       child: _setChild(),
     );
   }

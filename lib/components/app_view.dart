@@ -7,13 +7,17 @@ class AppView extends StatefulWidget {
   final Widget? subtitle;
   final Widget? child;
   final Widget? footer;
+  final double? width;
+  final double? height;
 
   const AppView({
     super.key,
     this.title = const Text("Pantalla"),
     this.subtitle,
     this.child,
-    this.footer
+    this.footer,
+    this.width,
+    this.height
     });
 
   @override
@@ -40,8 +44,13 @@ class _AppViewState extends State<AppView> {
     
     return LayoutBuilder(
       builder: (builder, constraints) {
-        final width = constraints.maxWidth;
-        final height = constraints.maxHeight * 0.8;
+        double width_ = 1.0;
+        double height_ = 0.85;
+        if (widget.width != null) width_ = widget.width!;
+        if (widget.height != null) height_ = widget.height!;
+        
+        final width = constraints.maxWidth * width_;
+        final height = constraints.maxHeight * height_;
     return Padding(
       padding: EdgeInsetsGeometry.symmetric(horizontal: 10, vertical: 10),
       child: SingleChildScrollView(

@@ -11,7 +11,7 @@ class Game {
 
   Game(this.p1, this.p2, int size) {
 
-    
+  
     board = Board(
     row: size > 7 ? size : 7,
     col: size > 7 ? size : 7,
@@ -30,6 +30,8 @@ class Game {
 
   void startGame() {
     currentPlayer = p1;
+
+    
     
   }
 
