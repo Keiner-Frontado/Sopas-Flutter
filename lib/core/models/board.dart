@@ -16,6 +16,26 @@ class Cell {
     this.isUsed = false,
   });
 
+  // Convierte el objeto a un Mapa que JSON pueda entender
+  Map<String, dynamic> toJson() => {
+    'row': row,
+    'col': col,
+    'letter': letter,
+    'isSelected': isSelected,
+    'isUsed': isUsed,
+  };
+
+  // Crea una instancia de Cell a partir de un Mapa (JSON)
+  factory Cell.fromJson(Map<String, dynamic> json) {
+    return Cell(
+      row: json['row'],
+      col: json['col'],
+      letter: json['letter'],
+      isSelected: json['isSelected'],
+      isUsed: json['isUsed'],
+    );
+  }
+
   Cell copy() {
     return Cell(
       row: row,
@@ -40,8 +60,8 @@ class Board extends ChangeNotifier{
   final Map<String, bool> prevIsSelected = {};
 
 
-  Board({required this.row, required this.col, required this.theme}) {
-    createBoard();
+  Board({required this.row, required this.col, required this.theme, board}) {
+    if ( board != null) {this.board = board;} else {createBoard();}
   }
   
   void notify() {

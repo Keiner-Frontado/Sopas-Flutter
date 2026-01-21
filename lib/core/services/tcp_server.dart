@@ -15,10 +15,12 @@ import 'package:flutter_application_1/core/models/client.dart';
 
 
 class TcpServerManager {
+
   ServerSocket? _server;
   final List<Client> _clients = [];
 
   final StreamController<String> _logController = StreamController.broadcast();
+  Map initData = {};
   Stream<String> get onLog => _logController.stream;
 
 
@@ -28,6 +30,9 @@ class TcpServerManager {
     _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
 
+  void setInitData(Map data) {
+    initData = data;
+  }
   /// Crea y arranca el servidor TCP en el puerto indicado.
   Future<void> crearConexion(int port, {bool bindAny = false}) async {
 
@@ -83,12 +88,15 @@ class TcpServerManager {
     final client = Client(clientSocket);
     _clients.add(client);
     _log('Cliente conectado desde ${client.ip}:${client.port}');
+    client.send({
+      'type': 'connect',
+      ...initData
+    });
 
     client.stream
     .transform(LineSplitter())
     .listen((String dataString) {
       try {
-
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');

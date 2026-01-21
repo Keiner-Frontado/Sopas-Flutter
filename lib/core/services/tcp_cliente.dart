@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_application_1/core/constants/game_themes.dart';
+import 'package:flutter_application_1/core/models/board.dart';
 import 'package:flutter_application_1/core/models/client.dart';
 
 /*
@@ -55,7 +57,28 @@ class TcpClientManager {
         try {
           
           final data = jsonDecode(dataString) as Map<String, dynamic>;
+
+          if (data['type'] == 'connect') {
+            // 1. Extraemos la matriz como List<dynamic>
+            var rawBoard = data['board'] as List;
+            Theme theme = Theme.fromJson(data['theme']);
+            // 2. Convertimos la matriz anidada
+            List<List<Cell>> board = rawBoard.map((row) {
+              return (row as List).map((cellData) {
+                return Cell.fromJson(cellData as Map<String, dynamic>);
+              }).toList();
+            }).toList();
+
+            _showData({
+              ...data,
+              'board': board,
+              'theme': theme
+            });
+          }else{
           _showData(data);
+          }
+
+
 
         } catch (e) {
           _log('Error decodificando respuesta: $e');
