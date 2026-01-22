@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_application_1/core/constants/game_themes.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 import 'package:flutter_application_1/core/models/board.dart';
 import 'package:flutter_application_1/core/models/client.dart';
 
@@ -21,17 +21,17 @@ class TcpClientManager {
   final StreamController<String> _logController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
 
-  final StreamController<Map> _dataController = StreamController.broadcast();
-  Stream<Map> get onData => _dataController.stream;
+  final StreamController<Game> _gameController = StreamController.broadcast();
+  Stream<Game> get onGame => _gameController.stream;
 
   void _log(String message) {
     final ts = DateTime.now().toLocal();
     _logController.add('[ *CLIENTE* (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})] $message');
   }
 
-  void _showData(Map data){
-    _dataController.add(data);
-    _log('Datos recibidos: ${data.toString()}');
+  void _showData(Game game){
+    _gameController.add(game);
+    _log('Datos recibidos: ${game.toString()}');
   }
 
   /// Conecta como cliente a un servidor TCP remoto/local.
@@ -55,30 +55,55 @@ class TcpClientManager {
       .transform(LineSplitter())
       .listen((String dataString) {
         try {
-          
           final data = jsonDecode(dataString) as Map<String, dynamic>;
 
-          if (data['type'] == 'connect') {
-            // 1. Extraemos la matriz como List<dynamic>
-            var rawBoard = data['board'] as List;
-            Theme theme = Theme.fromJson(data['theme']);
-            // 2. Convertimos la matriz anidada
-            List<List<Cell>> board = rawBoard.map((row) {
-              return (row as List).map((cellData) {
-                return Cell.fromJson(cellData as Map<String, dynamic>);
-              }).toList();
-            }).toList();
+          final String? type = data['type'] as String?;
 
-            _showData({
-              ...data,
-              'board': board,
-              'theme': theme
+          // Manejo de payloads que contienen el estado del juego
+          if (type == 'game_update' && data['game'] is Map) {
+            final gameJson = data['game'] as Map<String, dynamic>;
+
+            Board? boardObj;
+            if (gameJson['board'] != null) {
+              try {
+                boardObj = Board.fromJson({
+                  'board': gameJson['board'],
+                  if (gameJson['theme'] != null) 'theme': gameJson['theme'],
+                });
+              } catch (e) {
+                _log('Error reconstruyendo Board desde game_update: $e');
+              }
+            }
+
+            final gameInstance = Game(data: {
+              'players': gameJson['players'],
+              if (boardObj != null) 'board': boardObj,
             });
-          }else{
-          _showData(data);
+
+            _showData(gameInstance);
           }
 
+          // Compatibilidad con payload antiguo 'connect' que incluye 'board' y 'theme'
+          if (type == 'connect') {
+            try {
+              Board? boardObj;
+              if (data['board'] != null) {
+                boardObj = Board.fromJson(data);
+              }
 
+              final gameInstance = Game(data: {
+                'players': data['players'],
+                if (boardObj != null) 'board': boardObj,
+              });
+
+              _showData(gameInstance);
+            } catch (e) {
+              _log('Error procesando connect payload: $e');
+            }
+          }
+
+          // Por defecto, solo loguear y ignorar
+          _log('Mensaje no procesado del servidor: ${data.toString()}');
 
         } catch (e) {
           _log('Error decodificando respuesta: $e');

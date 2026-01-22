@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/material.dart' hide Theme;
 import 'package:flutter_application_1/core/constants/game_themes.dart';
 
 class Cell {
@@ -48,7 +47,7 @@ class Cell {
 
 }
 
-class Board extends ChangeNotifier{
+class Board {
   final int row;
   final int col;
   late Theme theme;
@@ -64,9 +63,7 @@ class Board extends ChangeNotifier{
     if ( board != null) {this.board = board;} else {createBoard();}
   }
   
-  void notify() {
-    notifyListeners();
-  }
+  // Board is now a plain model — notifications are handled by `Game`.
 
   String getThemeName(){
     return theme.theme;
@@ -244,7 +241,43 @@ class Board extends ChangeNotifier{
 
   updateSelectedCells(List<Cell> selectedCells) {
     this.selectedCells = selectedCells;
-    notify();
+  }
+
+  // Crea un Board a partir de un JSON serializado (matriz de celdas y opcional tema)
+  factory Board.fromJson(Map<String, dynamic> json) {
+    
+    final rawBoard = json['board'] as List?;
+    if (rawBoard == null) {
+      throw Exception('Board.fromJson: no se encontró la clave "board"');
+    }
+
+    final matrix = rawBoard.map((row) {
+      return (row as List).map((cellData) {
+        return Cell.fromJson(cellData as Map<String, dynamic>);
+      }).toList();
+    }).toList();
+
+    final int rows = matrix.length;
+    final int cols = rows > 0 ? matrix[0].length : 0;
+
+    Theme theme;
+    if (json['theme'] != null) {
+      try {
+        theme = Theme.fromJson(json['theme'] as Map<String, dynamic>);
+      } catch (_) {
+        theme = Themes.selectTheme();
+      }
+    } else {
+      theme = Themes.selectTheme();
+    }
+
+    final boardObj = Board(row: rows, col: cols, theme: theme, board: matrix);
+    if (json['foundWords'] != null) {
+      try {
+        boardObj.foundWords = List<String>.from(json['foundWords']);
+      } catch (_) {}
+    }
+    return boardObj;
   }
 
   printBoard() {

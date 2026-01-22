@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/logic/gesture_controller.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 import 'package:flutter_application_1/components/board_painter.dart';
 import 'package:flutter_application_1/components/game_painter.dart';
 
 class BoardCanva extends StatefulWidget {
-  final Board board;
+  final Game game;
 
-  const BoardCanva({super.key, required this.board});
+  const BoardCanva({super.key, required this.game});
 
   @override
   State<BoardCanva> createState() => _BoardState();
@@ -20,23 +20,23 @@ class _BoardState extends State<BoardCanva> {
   @override
   void initState() {
     super.initState();
-    painter = BoardPainter(board: widget.board);
-    gamePainter = GamePainter(board: widget.board);
+    painter = BoardPainter(game: widget.game);
+    gamePainter = GamePainter(game: widget.game);
   }
 
   void _handlePanStart(DragStartDetails e) {
-    onPanStart(e, widget.board, gamePainter.lastSize);
-    widget.board.notify();
+    onPanStart(e, widget.game, gamePainter.lastSize);
+    widget.game.notify();
   }
 
   void _handlePanUpdate(DragUpdateDetails e) {
-    onPanUpdate(e, widget.board, gamePainter.lastSize);
-    widget.board.notify();
+    onPanUpdate(e, widget.game, gamePainter.lastSize);
+    widget.game.notify();
   }
 
   void _handlePanEnd(DragEndDetails e) {
-    onPanEnd(e, widget.board);
-    widget.board.notify();
+    onPanEnd(e, widget.game);
+    widget.game.notify();
   }
 
   @override

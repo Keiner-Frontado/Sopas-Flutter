@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
 import 'package:flutter_application_1/components/chip_row.dart';
-import 'package:flutter_application_1/core/constants/game_themes.dart';
 import 'package:flutter_application_1/core/constants/styles.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 
 class SingleplayerScreen extends StatefulWidget {
   const SingleplayerScreen({super.key});
@@ -15,27 +14,27 @@ class SingleplayerScreen extends StatefulWidget {
 
 class _SingleplayerScreen extends State<SingleplayerScreen> {
   
-  late Board? board;
+  late Game? game;
 
   Widget _setTitle(){
-    if (board == null) return Text("UN JUGADOR", style: Styles.titleText);
+    if (game == null) return Text("UN JUGADOR", style: Styles.titleText);
     return Text(
-      board!.getThemeName(),
+      game!.board.getThemeName(),
       style: Styles.titleText
     );
   }
 
   Widget _setSubtitle() {
     
-    if (board != null) {
+    if (game != null) {
       return ListenableBuilder(
-        listenable: board!,
+        listenable: game!,
         builder:(context, child){
           return Column (
           children: [
             ChipRow(
-            buttonTexts: board!.theme.words
-                .where((w) => !board!.foundWords.contains(w))
+            buttonTexts: game!.board.theme.words
+                .where((w) => !game!.board.foundWords.contains(w))
                 .toList(),
             ),
           ]);
@@ -50,10 +49,10 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   }
 
   Widget? _setFooter(){
-    if (board != null){
+    if (game != null){
       return ElevatedButton(
         onPressed: () =>
-          setState(() => board= null),
+          setState(() => game= null),
 
         child: Text("Reiniciar Juego"),
       );
@@ -63,7 +62,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget _setChild(){
 
-    if (board != null) return BoardCanva(board: board!);
+    if (game != null) return BoardCanva(game: game!);
     
     return ElevatedButton(
       onPressed: () =>
@@ -74,13 +73,13 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   }
 
   void _createBoard() {
-    board= Board(row: 10, col:10, theme: Themes.selectTheme());
+    game = Game(data: {'size': 10});
   }
 
   @override
   void initState() {
     super.initState();
-    board = null;
+    game = null;
   }
 
   @override

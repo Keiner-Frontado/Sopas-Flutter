@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 
 /// Convierte el ángulo del puntero en una dirección de matriz (dRow, dCol)
   /// Divide el círculo en 8 rebanadas de 45 grados cada una.
@@ -39,12 +39,12 @@ import 'package:flutter_application_1/core/models/board.dart';
 }
 
   /// Sincroniza el tablero llamando a selectCell solo cuando es necesario
-  void _updateSelectionLine(Board board, dynamic startCell, int dr, int dc, int steps) {
+  void _updateSelectionLine(Game game, dynamic startCell, int dr, int dc, int steps) {
   
   // 1. Calculamos cuántas celdas DEBERÍAMOS tener seleccionadas en total
   // (1 por la celda inicial + los pasos calculados)
   int targetLength = steps + 1;
-  int currentLength = board.selectedCells.length;
+  int currentLength = game.board.selectedCells.length;
 
   // CASO A: Avanzando (El usuario alarga la selección)
   if (targetLength > currentLength) {
@@ -55,12 +55,11 @@ import 'package:flutter_application_1/core/models/board.dart';
       int nextC = startCell.col + (dc * i);
 
       // Verificamos límites por seguridad antes de llamar a tu lógica
-      if (nextR >= 0 && nextR < board.row && 
-          nextC >= 0 && nextC < board.col) {
+      if (nextR >= 0 && nextR < game.board.row && 
+          nextC >= 0 && nextC < game.board.col) {
         
-        // AQUÍ ESTÁ LA INTEGRACIÓN:
-        // Llamamos a tu método existente. Él se encarga de notifyListeners, etc.
-        board.selectCell(nextR, nextC);
+        // Call into Board model through Game
+        game.board.selectCell(nextR, nextC);
       }
     }
   } 
@@ -75,7 +74,7 @@ import 'package:flutter_application_1/core/models/board.dart';
       // Si tienes lógica compleja al deseleccionar (ej. sonido de borrar),
       // deberías crear un método board.deselectLast() y llamarlo aquí.
       
-      if (board.selectedCells.isNotEmpty) {
+      if (game.board.selectedCells.isNotEmpty) {
         // Opción 1: Manipulación directa (si tu clase Board lo permite)
         // final removed = board.selectedCells.removeLast();
         // removed.isSelected = false; // Si necesitas apagar flags manualmente
@@ -86,42 +85,42 @@ import 'package:flutter_application_1/core/models/board.dart';
     }
     // Importante: Si modificaste la lista directamente aquí (Opción 1), 
     // necesitas notificar al final.
-    // board.notifyListeners(); 
+    // game.notifyListeners(); 
   }
 }
 
-  List<int>? _getCellFromPosition(Offset localPosition, Board board, Size? lastSize) {
+  List<int>? _getCellFromPosition(Offset localPosition, Game game, Size? lastSize) {
     final size = lastSize;
     if (size == null) return null;
-    final cellW = size.width / board.col;
-    final cellH = size.height / board.row;
+    final cellW = size.width / game.board.col;
+    final cellH = size.height / game.board.row;
     int c = (localPosition.dx / cellW).floor();
     int r = (localPosition.dy / cellH).floor();
-    if (r < 0 || r >= board.row || c < 0 || c >= board.col) return null;
+    if (r < 0 || r >= game.board.row || c < 0 || c >= game.board.col) return null;
     return [r, c];
   }
 
-  void onPanStart(DragStartDetails details,Board board, Size? lastSize) {
-    board.selectedCells.clear();
-    final cell = _getCellFromPosition(details.localPosition, board, lastSize);
+  void onPanStart(DragStartDetails details,Game game, Size? lastSize) {
+    game.board.selectedCells.clear();
+    final cell = _getCellFromPosition(details.localPosition, game, lastSize);
     if (cell != null) {
       final r = cell[0];
       final c = cell[1];
-      board.selectCell(r, c);
+      game.board.selectCell(r, c);
     }
   }
 
-  void onPanUpdate(DragUpdateDetails details, Board board, Size? lastSize) {
+  void onPanUpdate(DragUpdateDetails details, Game game, Size? lastSize) {
   // 1. Validaciones iniciales
-  if (board.selectedCells.isEmpty) return;
+  if (game.board.selectedCells.isEmpty) return;
   if (lastSize == null) return;
   // Obtenemos la celda de INICIO (el ancla)
-  final startCell = board.selectedCells.first;
+  final startCell = game.board.selectedCells.first;
   
   // Necesitamos el centro en pixeles de la celda inicial para usarlo como pivote
   // Suponiendo que tienes una función o variables para esto:
-  final cellWidth = lastSize.width / board.col;
-  final cellHeight = lastSize.height / board.row;
+  final cellWidth = lastSize.width / game.board.col;
+  final cellHeight = lastSize.height / game.board.row;
   
   final Offset startCenterPx = Offset(
     (startCell.col * cellWidth) + (cellWidth / 2),
@@ -155,8 +154,8 @@ import 'package:flutter_application_1/core/models/board.dart';
 
   // 4. Lógica de Bloqueo de Dirección
   // Si ya tenemos una línea formada (más de 1 celda), debemos respetar esa dirección
-  if (board.selectedCells.length > 1) {
-    final secondCell = board.selectedCells[1];
+  if (game.board.selectedCells.length > 1) {
+    final secondCell = game.board.selectedCells[1];
     int lockedDr = secondCell.row - startCell.row;
     int lockedDc = secondCell.col - startCell.col;
 
@@ -189,16 +188,16 @@ import 'package:flutter_application_1/core/models/board.dart';
 
   // 6. Aplicar selección
   // Reconstruimos la lista desde 0 hasta 'steps' en la dirección calculada
-  _updateSelectionLine(board, startCell, dirRow, dirCol, steps);
+  _updateSelectionLine(game, startCell, dirRow, dirCol, steps);
 }
 
-  void onPanEnd(DragEndDetails details, Board board) {
+  void onPanEnd(DragEndDetails details, Game game) {
     // Process selected word here if needed
     try{
-    board.foundWord();
+    game.board.foundWord();
     } catch (e) {
       // ignore: avoid_print
       print(e);
     }
-    board.notify();
+    game.notify();
   }

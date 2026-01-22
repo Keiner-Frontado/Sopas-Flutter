@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
 import 'package:flutter_application_1/components/chip_row.dart';
-import 'package:flutter_application_1/core/constants/game_themes.dart';
+
 import 'package:flutter_application_1/core/constants/styles.dart' as styles;
 import 'package:flutter_application_1/core/logic/game.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+
 import 'package:flutter_application_1/core/services/tcp_cliente.dart';
 import 'package:flutter_application_1/core/services/tcp_server.dart';
 import 'package:flutter_application_1/screens/multiplayer/client_config.dart';
@@ -35,19 +35,17 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   StreamSubscription<String>? _logSub;
 
   StreamSubscription<String>? _logSubClient;
-  StreamSubscription<Map>? _dataSubClient;
+  StreamSubscription<Game>? _gameSubClient;
 
-    @override
-  void dispose() {
+  void disconnect() {
     game = null;
     _serverRunning = false;
     _clientConnected = false;
     _logSub?.cancel();
     _logSubClient?.cancel();
-    _dataSubClient?.cancel();
-    _tcp.dispose();
-    _tcpClient.dispose();
-    super.dispose();
+    _gameSubClient?.cancel();
+    _tcp.cerrarConexion();
+    _tcpClient.desconectar();
   }
 
   @override
@@ -81,7 +79,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   Widget _setSubtitle() {
     if (game != null){
       return ListenableBuilder(
-        listenable: game!.board,
+        listenable: game!,
         builder:(context, child){
           return Column (
           children: [
@@ -101,7 +99,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   }
 
   Widget _setChild() {
-    if (game != null) return BoardCanva(board: game!.board);
+    if (game != null) return BoardCanva(game: game!);
 
     return Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -116,7 +114,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
       onPressed: () => setState((){
         selected = 0;
-        dispose();
+        disconnect();
         }),
       child: const Text("Volver al menú")
     );
@@ -164,36 +162,23 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
 
 
-
+// LOGICA DE SERVIDOR (hay que sacar esta vaina de aquí después)
 
   void createServer() async {
-
-    _dataSubClient = _tcpClient.onData.listen((data) {
-      if (data['type'] == 'connect') setState(() => game = Game('client', data['board'],data['theme']) );
-
-      // ignore: avoid_print
-      print(data.toString());
-    });
 
     _logSub = _tcp.onLog.listen((log) {
       // ignore: avoid_print
       print('\n $log \n');
     });
-    // Subscribe to client logs too so both server and client logs appear
-    _logSubClient = _tcpClient.onLog.listen((log) {
-      // ignore: avoid_print
-      print('\n $log \n');
-    });
+
 
     try {
 
       await _tcp.crearConexion(port!, bindAny: true);
-      final initBoard = Board(
-        row: size! > 7 ? size! : 7,
-        col: size! > 7 ? size! : 7,
-        theme: Themes.selectTheme()
-      );
-      _tcp.setInitData({'board': initBoard.board, 'theme': initBoard.theme});
+      final initGame = Game(data: {'size': size});
+
+      _tcp.setInitGame(initGame);
+
       setState(() => _serverRunning = true );
       connectServer();
 
@@ -203,7 +188,28 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   }
 
   void connectServer() async {
+    _gameSubClient = _tcpClient.onGame.listen((receivedGame) {
+      setState(() {
+        game = receivedGame;
+        _clientConnected = true;
+      });
+      // ignore: avoid_print
+      print('Game received from server: ${receivedGame.toJson()}');
+    });
+
+
+    // Subscribe to client logs too so both server and client logs appear
+    _logSubClient = _tcpClient.onLog.listen((log) {
+      // ignore: avoid_print
+      print('\n $log \n');
+    });
+
     await _tcpClient.conectar(ip!, port!);
+
+    // If already connected synchronously, set flag
+    if (_tcpClient.client != null) {
+      setState(() => _clientConnected = true);
+    }
 
 
   }

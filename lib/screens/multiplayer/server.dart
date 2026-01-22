@@ -31,42 +31,42 @@ class _ServerScreenState extends State<ServerScreen> {
   bool _clientConnected = false;
   bool _exposeToNetwork = false;
 
-  @override
-  void initState() {
-    super.initState();
+  // @override
+  // void initState() {
+  //   super.initState();
 
-    _dataSubClient = _tcpClient.onData.listen((data) {
-      /// AQUI VA LA LOGICA DE QUE HACER CUANDO SE RECIBA UN DATO DE JUEGO
-      // ignore: avoid_print
-      print(data.toString());
-    });
+  //   _dataSubClient = _tcpClient.onData.listen((data) {
+  //     /// AQUI VA LA LOGICA DE QUE HACER CUANDO SE RECIBA UN DATO DE JUEGO
+  //     // ignore: avoid_print
+  //     print(data.toString());
+  //   });
 
-    _logSub = _tcp.onLog.listen((log) {
-      // Append to logs TextField
-      final previous = _logsController.text;
-      final updated = previous.isEmpty ? log : '$previous \n $log';
-      setState(() {
-        _logsController.text = updated;
-      });
-      // Scroll behavior or selection could be added later
-    });
-    // Subscribe to client logs too so both server and client logs appear
-    _logSubClient = _tcpClient.onLog.listen((log) {
-      final previous = _logsController.text;
-      final updated = previous.isEmpty ? log : '$previous \n $log';
-      setState(() {
-        _logsController.text = updated;
-      });
-    });
-  }
+  //   _logSub = _tcp.onLog.listen((log) {
+  //     // Append to logs TextField
+  //     final previous = _logsController.text;
+  //     final updated = previous.isEmpty ? log : '$previous \n $log';
+  //     setState(() {
+  //       _logsController.text = updated;
+  //     });
+  //     // Scroll behavior or selection could be added later
+  //   });
+  //   // Subscribe to client logs too so both server and client logs appear
+  //   _logSubClient = _tcpClient.onLog.listen((log) {
+  //     final previous = _logsController.text;
+  //     final updated = previous.isEmpty ? log : '$previous \n $log';
+  //     setState(() {
+  //       _logsController.text = updated;
+  //     });
+  //   });
+  // }
 
   @override
   void dispose() {
-  _logSub?.cancel();
-  _logSubClient?.cancel();
-  _dataSubClient?.cancel();
-  _tcp.dispose();
-  _tcpClient.dispose();
+    _logSub?.cancel();
+    _logSubClient?.cancel();
+    _dataSubClient?.cancel();
+    _tcp.dispose();
+    _tcpClient.dispose();
     _logsController.dispose();
     ipController.dispose();
     portController.dispose();

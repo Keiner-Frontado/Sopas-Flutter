@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 
 class BoardPainter extends CustomPainter {
   
-  Board board;
+  final Game game;
   late double cellWidth;
   late double cellHeight;
 
-  BoardPainter({required this.board}) : super(repaint: board);
+  BoardPainter({required this.game}) : super(repaint: game);
 
   double getWidth() {
     return cellWidth;
@@ -25,6 +25,7 @@ class BoardPainter extends CustomPainter {
     //   ..color = Colors.blue
     //   ..style = PaintingStyle.fill;
 
+    final board = game.board;
     cellWidth = size.width / board.col;
     cellHeight = size.height / board.row;
     
