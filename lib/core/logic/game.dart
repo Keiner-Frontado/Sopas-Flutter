@@ -18,13 +18,15 @@ class Game extends ChangeNotifier {
       p1 = Player(id: 1,name: 'Jugador 1');
       p2 = Player(id: 2,name: 'Jugador 2');
     }
-    if(data['board'] != null){ board = data['board']; } else {
+    if(data['board'] != null){ board = Board.fromJson(data['board']); } else {
       // Crear un nuevo tablero si no hay datos
       board = Board(
         row: data['size'] > 7 ? data['size'] : 7,
         col: data['size'] > 7 ? data['size'] : 7,
         theme: Themes.selectTheme()
       );
+      // ignore: avoid_print
+      print("\n\nRANDOM BOARD\n\n");
     }
 
 
@@ -41,7 +43,7 @@ class Game extends ChangeNotifier {
       'p2': p2.toJson(),
       'currentPlayer': currentPlayer.toJson(),
     },
-    'board': board.board.map((row) => row.map((c) => c.toJson()).toList()).toList(),
+    'board': board.toJson(),
   };
 
   factory Game.fromJson(Map<String, dynamic> json) {
@@ -54,6 +56,47 @@ class Game extends ChangeNotifier {
     board.deselectCells();
     currentPlayer = currentPlayer == p1 ? p2 : p1;
     notifyListeners();
+  }
+
+  void updateBoard(Board newBoard){
+    board = newBoard;
+    notify();
+  }
+
+  void updateData(Map data){
+           // Manejo de tipos específicos de mensaje desde el cliente
+        final type = data['type'];
+
+        if (type == 'select_cell') {
+          // Espera { type: 'select_cell', content: [<int>, <int>] }
+          try {
+            final List<dynamic> content = data['content'];
+            final int r = content[0];
+            final int c = content[1];
+
+              board.selectCell(r, c);
+              // Disparar notificación para que el listener propague la actualización
+          }catch (e){
+            throw Exception('Error procesando select_cell: $e');
+          }
+        }
+
+        if (type == 'found_word'){
+          try{
+            board.foundWord();
+          }catch(e){
+            throw Exception('Error procesando found_word: $e');
+          }
+        }
+
+        if (type == 'finish_turn') {
+          try{
+            finishTurn();
+          }catch(e){
+            throw Exception('Error procesando finish_turn: $e');
+          }
+        }
+        notify();
   }
 
   void startGame() {

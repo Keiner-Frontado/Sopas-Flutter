@@ -92,8 +92,8 @@ import 'package:flutter_application_1/core/models/board.dart';
 
   List<int> onPanUpdate(DragUpdateDetails details, Board board, Size? lastSize) {
   // 1. Validaciones iniciales
-  if (board.selectedCells.isEmpty) return;
-  if (lastSize == null) return;
+  if (board.selectedCells.isEmpty) return([]);
+  if (lastSize == null) return([]);
   // Obtenemos la celda de INICIO (el ancla)
   final startCell = board.selectedCells.first;
   

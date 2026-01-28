@@ -243,6 +243,13 @@ class Board {
     this.selectedCells = selectedCells;
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'board': board.map((row) => row.map((c) => c.toJson()).toList()).toList(),
+      'theme': theme.toJson(),
+      'foundWords': foundWords,
+    };
+  }
   // Crea un Board a partir de un JSON serializado (matriz de celdas y opcional tema)
   factory Board.fromJson(Map<String, dynamic> json) {
     
@@ -262,13 +269,9 @@ class Board {
 
     Theme theme;
     if (json['theme'] != null) {
-      try {
-        theme = Theme.fromJson(json['theme'] as Map<String, dynamic>);
-      } catch (_) {
-        theme = Themes.selectTheme();
-      }
-    } else {
-      theme = Themes.selectTheme();
+      theme = Theme.fromJson(json['theme'] as Map<String, dynamic>); 
+    }else{
+      throw Exception('Board.fromJson: no se encontró la clave "theme"');
     }
 
     final boardObj = Board(row: rows, col: cols, theme: theme, board: matrix);

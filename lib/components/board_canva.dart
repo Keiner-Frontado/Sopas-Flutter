@@ -6,8 +6,8 @@ import 'package:flutter_application_1/components/game_painter.dart';
 
 class BoardCanva extends StatefulWidget {
   final Game game;
-
-  const BoardCanva({super.key, required this.game});
+  final ValueChanged< Map<String, dynamic> > handler;
+  const BoardCanva({super.key, required this.game, required this.handler});
 
   @override
   State<BoardCanva> createState() => _BoardState();
@@ -24,19 +24,41 @@ class _BoardState extends State<BoardCanva> {
     gamePainter = GamePainter(game: widget.game);
   }
 
+  void _notify(data) {
+  // enviar un mapa con la info que quieras
+  widget.handler.call(data);
+
+}
+
   void _handlePanStart(DragStartDetails e) {
-    onPanStart(e, widget.game, gamePainter.lastSize);
-    widget.game.notify();
+    final position = onPanStart(e, widget.game.board, gamePainter.lastSize);
+    // ignore: avoid_print
+    if (position.length == 2){
+      widget.game.board.selectCell(position[0], position[1]);
+      widget.game.notify();
+      _notify({'type': 'select_cell', 'content' : position});
+    }
   }
 
   void _handlePanUpdate(DragUpdateDetails e) {
-    onPanUpdate(e, widget.game, gamePainter.lastSize);
-    widget.game.notify();
+    final position = onPanUpdate(e, widget.game.board, gamePainter.lastSize);
+    
+    if (position.length == 2){
+      widget.game.board.selectCell(position[0], position[1]);
+      widget.game.notify();
+      _notify({'type': 'select_cell', 'content' : position});
+    }
   }
 
   void _handlePanEnd(DragEndDetails e) {
-    onPanEnd(e, widget.game);
+    try{
+    widget.game.board.foundWord();
+    }catch (e){
+      // ignore: avoid_print
+      print('$e');
+    }
     widget.game.notify();
+    _notify({'type': 'found_word'});
   }
 
   @override

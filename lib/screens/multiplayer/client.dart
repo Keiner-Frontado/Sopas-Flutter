@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/constants/styles.dart' as app_styles;
-import 'package:flutter_application_1/core/logic/game.dart';
 import 'package:flutter_application_1/core/services/tcp_cliente.dart';
 
 class ClientScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class _ClientScreenState extends State<ClientScreen> {
   final ipController = TextEditingController(text: '127.0.0.1');
   final portController = TextEditingController(text: '4040');
 
-  StreamSubscription<Game>? _gameSub;
+  StreamSubscription<Map>? _dataSub;
   StreamSubscription<String>? _logSub;
 
   bool _clientConnected = false;
@@ -29,7 +28,7 @@ class _ClientScreenState extends State<ClientScreen> {
     @override
   void initState() {
     super.initState();
-    _gameSub = _tcpClient.onGame.listen((data) {
+    _dataSub = _tcpClient.onData.listen((data) {
       /// AQUI VA LA LOGICA DE QUE HACER CUANDO SE RECIBA UN DATO DE JUEGO
       // ignore: avoid_print
       print(data.toString());
@@ -47,7 +46,7 @@ class _ClientScreenState extends State<ClientScreen> {
   @override
   void dispose() {
     _logSub?.cancel();
-    _gameSub?.cancel();
+    _dataSub?.cancel();
     _tcpClient.dispose();
     _logsController.dispose();
     ipController.dispose();

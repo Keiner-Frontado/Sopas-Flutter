@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb, VoidCallback;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_application_1/core/logic/game.dart';
 import 'package:flutter_application_1/core/models/client.dart';
 /*
@@ -19,11 +19,10 @@ class TcpServerManager {
 
   ServerSocket? _server;
   final List<Client> _clients = [];
+  Game? game;
 
   final StreamController<String> _logController = StreamController.broadcast();
-  final StreamController<Game> _gameController = StreamController.broadcast();
-  Game? game;
-  VoidCallback? _gameListener;
+  final StreamController<Map> _dataController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
 
 
@@ -32,23 +31,20 @@ class TcpServerManager {
     _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
 
-  void _gameUpdate() {
+  void _sendUpdate(client, data){
     if (game == null) return;
 
     // Emitir al stream interno
-    _gameController.add(game!);
+    _dataController.add(data);
     _log('Estado del juego actualizado (stream interno).');
 
     // Construir payload serializable y enviar a todos los clientes
     try {
-      final payload = {
-        'type': 'game_update',
-        'game': game!.toJson(),
-      };
 
       for (final c in _clients) {
         try {
-          c.send(payload);
+          if (c == client) continue; // no se lo enviamos al que envió el update
+          c.send(data);
         } catch (e) {
           _log('Error enviando update al cliente ${c.name}: $e');
         }
@@ -60,25 +56,10 @@ class TcpServerManager {
   }
 
   void setInitGame(Game initGame) {
-    // Remover listener previo si existe
-    if (_gameListener != null && game != null) {
-      try {
-        game!.removeListener(_gameListener!);
-      } catch (_) {}
-      _gameListener = null;
-    }
-
     game = initGame;
-
-    // Añadir nuevo listener para propagar cambios automáticamente
-    _gameListener = () {
-      _gameUpdate();
-    };
-    game!.addListener(_gameListener!);
-
-    // Enviar estado inicial inmediatamente
-    _gameUpdate();
   }
+
+
   /// Crea y arranca el servidor TCP en el puerto indicado.
   Future<void> crearConexion(int port, {bool bindAny = false}) async {
 
@@ -134,7 +115,8 @@ class TcpServerManager {
     final client = Client(clientSocket);
     _clients.add(client);
     _log('Cliente conectado desde ${client.ip}:${client.port}');
-    if (game != null) _gameUpdate();
+    if (game != null) client.send({'type': 'connect', 'content' : game!.toJson()});
+    
 
     client.stream
     .transform(LineSplitter())
@@ -143,65 +125,15 @@ class TcpServerManager {
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');
-
-        // Manejo de tipos específicos de mensaje desde el cliente
-        final type = data['type'];
-        if (type == 'select_cell') {
-          // Espera { type: 'select_cell', r: <int>, c: <int> }
-          try {
-            final int r = data['r'];
-            final int c = data['c'];
-            if (game != null) {
-              game!.board.selectCell(r, c);
-              // Disparar notificación para que el listener propague la actualización
-              game!.notify();
-            }
-          } catch (e) {
-            _log('Error procesando select_cell: $e');
-          }
+        try{
+          game!.updateData(data);
+        }catch (e){
+          _log('Error actualizando estado del juego: $e');
         }
 
-        if (type == 'found_word') {
-          // Espera { type: 'found_word' }
-          try {
-            if (game != null) {
-              // Intentar marcar palabra encontrada en el tablero
-              try {
-                final ok = game!.board.foundWord();
-                if (ok) game!.notify();
-              } catch (e) {
-                _log('found_word fallo: $e');
-              }
-            }
-          } catch (e) {
-            _log('Error procesando found_word: $e');
-          }
-        }
-
-        if (type == 'finish_turn') {
-          try {
-            if (game != null) {
-              game!.finishTurn();
-              // finishTurn ya hace notifyListeners -> _gameUpdate
-            }
-          } catch (e) {
-            _log('Error procesando finish_turn: $e');
-          }
-        }
-
-        // Default: reenviar la información a los demás clientes (broadcast)
-        for (final c in _clients) {
-          if (c == client) continue;
-          c.send({
-            ...data
-          });
-        }
-        // Echo para que el cliente vea status de su envío
-        client.send({
-          'from': "server",
-          'msg': "Mensaje enviado."
-        });
         
+        _sendUpdate(client, data);
+
       } catch (e) {
         _log('Error decodificando datos: $e');
       }
@@ -238,19 +170,13 @@ class TcpServerManager {
       _log('Error cerrando servidor: $e');
     }
     // Quitar listener de game si existe
-    if (_gameListener != null && game != null) {
-      try {
-        game!.removeListener(_gameListener!);
-      } catch (_) {}
-      _gameListener = null;
-    }
   }
 
   /// Limpia recursos internos.
   Future<void> dispose() async {
     await cerrarConexion();
     await _logController.close();
-    await _gameController.close();
+    await _dataController.close();
   }
 
 

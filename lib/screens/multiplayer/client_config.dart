@@ -12,7 +12,7 @@ class ClientConfigScreen extends StatefulWidget {
 }
 
 class _ClientConfigScreen extends State<ClientConfigScreen> {
-  final ipController = TextEditingController(text: '127.0.0.1');
+  final ipController = TextEditingController(text: '192.168.1.21');
   final portController = TextEditingController(text: '4040');
 
   @override

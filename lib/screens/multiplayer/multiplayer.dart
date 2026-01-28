@@ -35,7 +35,14 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   StreamSubscription<String>? _logSub;
 
   StreamSubscription<String>? _logSubClient;
-  StreamSubscription<Game>? _gameSubClient;
+  StreamSubscription<Map>? _dataSubClient;
+
+
+  void _onChange(Map<String, dynamic> data) {
+    // enviar los datos al servidor
+    _tcpClient.enviar(data);
+
+  }
 
   void disconnect() {
     game = null;
@@ -43,7 +50,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     _clientConnected = false;
     _logSub?.cancel();
     _logSubClient?.cancel();
-    _gameSubClient?.cancel();
+    _dataSubClient?.cancel();
     _tcp.cerrarConexion();
     _tcpClient.desconectar();
   }
@@ -99,7 +106,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   }
 
   Widget _setChild() {
-    if (game != null) return BoardCanva(game: game!);
+    if (game != null) return BoardCanva(game: game!, handler: _onChange);
 
     return Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -176,7 +183,8 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
       await _tcp.crearConexion(port!, bindAny: true);
       final initGame = Game(data: {'size': size});
-
+            // ignore: avoid_print
+      print('[---] Game created: \n\n ${initGame.toJson()}');
       _tcp.setInitGame(initGame);
 
       setState(() => _serverRunning = true );
@@ -188,13 +196,30 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   }
 
   void connectServer() async {
-    _gameSubClient = _tcpClient.onGame.listen((receivedGame) {
-      setState(() {
-        game = receivedGame;
-        _clientConnected = true;
-      });
+    _dataSubClient = _tcpClient.onData.listen((data) {
       // ignore: avoid_print
-      print('Game received from server: ${receivedGame.toJson()}');
+      print('[---] Game received from server: \n\n $data');
+
+      if(data['type'] == 'connect' && game == null){
+        try {
+          final gameInstance = Game(data: data['content']);
+
+          setState(() {
+            game = gameInstance;
+          });
+        } catch (e) {
+          // ignore: avoid_print
+          print('Error procesando connect payload: $e');
+        }
+      }else{
+        
+        try{
+          game!.updateData(data);
+        } catch (e) {
+          // ignore: avoid_print
+          print('Error procesando game update payload: $e');
+        }
+      }
     });
 
 
