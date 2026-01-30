@@ -62,7 +62,13 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget _setChild(){
 
-    if (game != null) return BoardCanva(game: game!, handler: (data) => game!.updateData(data) );
+    if (game != null) return BoardCanva(
+      game: game!,
+      handler: (data){ 
+        try{
+          game!.updateData(data);
+        } catch (e){print("$e");}
+        } );
     
     return ElevatedButton(
       onPressed: () =>
