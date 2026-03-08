@@ -7,7 +7,14 @@ import 'package:flutter_application_1/components/game_painter.dart';
 class BoardCanva extends StatefulWidget {
   final Game game;
   final ValueChanged< Map<String, dynamic> > handler;
-  const BoardCanva({super.key, required this.game, required this.handler});
+  /// When false, all user interaction is ignored (used for turn enforcement).
+  final bool allowInteraction;
+  const BoardCanva({
+    super.key,
+    required this.game,
+    required this.handler,
+    this.allowInteraction = true,
+  });
 
   @override
   State<BoardCanva> createState() => _BoardState();
@@ -27,10 +34,10 @@ class _BoardState extends State<BoardCanva> {
   void _notify(data) {
   // enviar un mapa con la info que quieras
   widget.handler.call(data);
-
-}
+  }
 
   void _handlePanStart(DragStartDetails e) {
+    if (!widget.allowInteraction) return;
     final position = onPanStart(e, widget.game.board, gamePainter.lastSize);
     // ignore: avoid_print
     if (position.length == 2){
@@ -41,6 +48,7 @@ class _BoardState extends State<BoardCanva> {
   }
 
   void _handlePanUpdate(DragUpdateDetails e) {
+    if (!widget.allowInteraction) return;
     final position = onPanUpdate(e, widget.game.board, gamePainter.lastSize);
     
     if (position.length == 2){
@@ -51,14 +59,22 @@ class _BoardState extends State<BoardCanva> {
   }
 
   void _handlePanEnd(DragEndDetails e) {
+    if (!widget.allowInteraction) return;
+    bool wordFound = false;
     try{
-    widget.game.board.foundWord();
+      wordFound = widget.game.board.foundWord(widget.game.currentPlayer.id);
     }catch (e){
       // ignore: avoid_print
       print('$e');
     }
     widget.game.notify();
-    _notify({'type': 'found_word'});
+    if (wordFound) {
+      _notify({'type': 'found_word'});
+      // auto finish turn after a successful word
+      // update local state immediately (host / same device)
+      widget.game.finishTurn();
+      _notify({'type': 'finish_turn'});
+    }
   }
 
   @override

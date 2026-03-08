@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
@@ -32,12 +33,11 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
         builder:(context, child){
           return Column (
           children: [
-            ChipRow(
-            buttonTexts: game!.board.theme.words
-                .where((w) => !game!.board.foundWords.contains(w))
-                .toList(),
-            ),
-          ]);
+          ChipRow(
+          buttonTexts: game!.board.theme.words
+              .where((w) => !game!.board.foundWords.containsKey(w))
+              .toList(),
+        ),]);
         }
       );
     } else {
@@ -62,20 +62,23 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget _setChild(){
 
-    if (game != null) return BoardCanva(
+    if (game == null) {
+      return ElevatedButton(
+        onPressed: () => setState(() => _createBoard()),
+        child: Text("Iniciar Juego"),
+      );
+    }
+
+    return BoardCanva(
       game: game!,
       handler: (data){ 
         try{
-          game!.updateData(data);
-        } catch (e){print("$e");}
+          print(game!.toJson());
+        }
+        catch (e){print("$e");}
         } );
     
-    return ElevatedButton(
-      onPressed: () =>
-        setState(() => _createBoard()),
-
-      child: Text("Iniciar Juego"),
-    );
+    
   }
 
   void _createBoard() {

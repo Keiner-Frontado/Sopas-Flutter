@@ -52,7 +52,7 @@ class Board {
   final int col;
   late Theme theme;
   late List<List<Cell>> board;
-  List<String> foundWords = [];
+  Map<String, int> foundWords = {};
   List<Cell> selectedCells = [];
   String selectedWord = '';
   // Guarda el estado previo de isSelected para celdas (clave 'r:c')
@@ -169,7 +169,7 @@ class Board {
     board[r][c].isSelected = true;
   }
 
-  bool foundWord() {
+  bool foundWord([int? playerId]) {
     
     final List<bool> prevIsUsed = [];
     int modified = 0;
@@ -179,7 +179,7 @@ class Board {
       if (!theme.words.contains(selectedWord)) {
         throw Exception('La palabra "$selectedWord" no está en la lista de palabras del tema.');
       }
-      if (foundWords.contains(selectedWord)) {
+      if (foundWords.containsKey(selectedWord)) {
         throw Exception('La palabra "$selectedWord" ya ha sido encontrada.');
       }
 
@@ -204,7 +204,7 @@ class Board {
       modified++;
       }
 
-    foundWords.add(selectedWord);
+    foundWords[selectedWord] = playerId ?? 1;
     return true;
 
     } catch (e) {
@@ -247,7 +247,7 @@ class Board {
     return {
       'board': board.map((row) => row.map((c) => c.toJson()).toList()).toList(),
       'theme': theme.toJson(),
-      'foundWords': foundWords,
+      'foundWords': foundWords.entries.map((e) => {'word': e.key, 'player': e.value}).toList(),
     };
   }
   // Crea un Board a partir de un JSON serializado (matriz de celdas y opcional tema)
@@ -277,7 +277,9 @@ class Board {
     final boardObj = Board(row: rows, col: cols, theme: theme, board: matrix);
     if (json['foundWords'] != null) {
       try {
-        boardObj.foundWords = List<String>.from(json['foundWords']);
+        boardObj.foundWords = Map.fromEntries(
+          (json['foundWords'] as List).map((e) => MapEntry(e['word'] as String, e['player'] as int))
+        );
       } catch (_) {}
     }
     return boardObj;

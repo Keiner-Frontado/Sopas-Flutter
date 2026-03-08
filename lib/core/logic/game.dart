@@ -11,27 +11,41 @@ class Game extends ChangeNotifier {
   late Player currentPlayer;
 
   Game({required Map data}) {
-    if (data['players'] != null){
+    // load players if provided, otherwise use defaults
+    if (data['players'] != null) {
       p1 = Player.fromJson(data['players']['p1']);
       p2 = Player.fromJson(data['players']['p2']);
     } else {
-      p1 = Player(id: 1,name: 'Jugador 1');
-      p2 = Player(id: 2,name: 'Jugador 2');
+      p1 = Player(id: 1, name: 'Jugador 1');
+      p2 = Player(id: 2, name: 'Jugador 2');
     }
-    if(data['board'] != null){ board = Board.fromJson(data['board']); } else {
+
+    // board either comes from payload or is generated
+    if (data['board'] != null) {
+      board = Board.fromJson(data['board']);
+    } else {
       // Crear un nuevo tablero si no hay datos
       board = Board(
         row: data['size'] > 7 ? data['size'] : 7,
         col: data['size'] > 7 ? data['size'] : 7,
-        theme: Themes.selectTheme()
+        theme: Themes.selectTheme(),
       );
       // ignore: avoid_print
       print("\n\nRANDOM BOARD\n\n");
     }
 
-
-    startGame();
-
+    // determine current player if payload includes it otherwise start fresh
+    if (data['players'] != null && data['currentPlayer'] != null) {
+      try {
+        final cp = Player.fromJson(data['currentPlayer']);
+        currentPlayer = cp.id == p1.id ? p1 : p2;
+      } catch (_) {
+        // fall back to starting player
+        startGame();
+      }
+    } else {
+      startGame();
+    }
   }
 
   /// Notify listeners (convenience wrapper)
@@ -48,7 +62,7 @@ class Game extends ChangeNotifier {
 
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
-      data: json,      
+      data: json,
     );
   }
 
@@ -83,7 +97,7 @@ class Game extends ChangeNotifier {
 
         if (type == 'found_word'){
           try{
-            board.foundWord();
+            board.foundWord(currentPlayer.id);
           }catch(e){
             throw Exception('Error procesando found_word: $e');
           }
