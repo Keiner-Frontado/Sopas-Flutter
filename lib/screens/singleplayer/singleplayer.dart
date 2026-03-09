@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
-import 'package:flutter_application_1/components/chip_row.dart';
 import 'package:flutter_application_1/core/constants/styles.dart';
 import 'package:flutter_application_1/core/logic/game.dart';
 
@@ -87,13 +86,15 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget _setChild(){
 
-    if (game != null) return BoardCanva(
+    if (game != null) {
+      return BoardCanva(
       game: game!,
       handler: (data){ 
         try{
           game!.updateData(data);
         } catch (e){print("$e");}
         } );
+    }
     
     return ElevatedButton(
       onPressed: () =>
