@@ -32,7 +32,11 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
         builder:(context, child){
           return Column (
           children: [
-              ChipRow(),
+              ChipRow(
+          buttonTexts: game!.board.theme.words
+              .where((w) => !game!.board.foundWords.containsKey(w))
+              .toList(),
+        ),
               
           ]);
         }
