@@ -32,6 +32,9 @@ class TcpServerManager {
     _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
 
+  /// Number of currently connected clients (including host loopback).
+  int get clientCount => _clients.length;
+
   void _sendUpdate(client, data){
     if (game == null) return;
 
@@ -141,6 +144,19 @@ class TcpServerManager {
     // the frontend can know which player it controls
     if (game != null) {
       client.send({'type': 'connect', 'content': game!.toJson(), 'player': assigned});
+    }
+
+    // if a new non-host player has joined, notify all existing clients
+    // so the host UI can react accordingly (e.g. enable interaction).
+    if (assigned == 2) {
+      _log('Jugador 2 se ha unido, notificando a todos.');
+      for (final c in _clients) {
+        try {
+          c.send({'type': 'player_joined', 'player': 2});
+        } catch (e) {
+          _log('Error notificando unión a ${c.name}: $e');
+        }
+      }
     }
 
     client.stream

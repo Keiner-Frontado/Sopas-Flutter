@@ -31,6 +31,8 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   Game? game;
   /// id del jugador local (1 o 2). Se asigna en onPlay según el modo.
   int? localPlayerId;
+  // flag to know when the other player has joined the match
+  bool _opponentConnected = false;
   // flags retained for future feature expansion (currently unused)
   bool _serverRunning = false;
   bool _clientConnected = false;
@@ -59,6 +61,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
   void disconnect() {
     game = null;
+    _opponentConnected = false;
     _serverRunning = false;
     _clientConnected = false;
     _logSub?.cancel();
@@ -90,9 +93,12 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
       if (mode == 'server') {
         localPlayerId = 1;
         createServer();
+        // host should wait for opponent
+        _opponentConnected = false;
       }
       if (mode == 'client') {
         localPlayerId = 2;
+        _opponentConnected = true; // host is already present
         connectServer();
       }
     });
@@ -165,7 +171,8 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
                 child: BoardCanva(
                   game: game!,
                   handler: _onChange,
-                  allowInteraction: isMyTurn,
+                  // only allow interaction when it's our turn and the opponent is present (host waits for player 2)
+                  allowInteraction: isMyTurn && _opponentConnected,
                 ),
               ),
             ],
@@ -196,6 +203,14 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
               style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
+          if (!_opponentConnected)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2.0),
+              child: Text(
+                'Esperando jugador 2...',
+                style: styles.Styles.hintText.copyWith(fontSize: 10),
+              ),
+            ),
           // buttons row: finish turn (if applicable) and back
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -205,7 +220,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   ),
-                  onPressed: _finishTurn,
+                  onPressed: (_opponentConnected ? _finishTurn : null),
                   child: const Text('Terminar turno', style: TextStyle(fontSize: 10)),
                 ),
               if (isMyTurn) const SizedBox(width: 4),
@@ -321,8 +336,12 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
           // ignore: avoid_print
           print('Error procesando connect payload: $e');
         }
-      }else{
-        
+      } else if (data['type'] == 'player_joined' && data['player'] == 2) {
+        // host learns that opponent has connected
+        setState(() {
+          _opponentConnected = true;
+        });
+      } else {
         setState(() {
           try{
             game!.updateData(data);
