@@ -32,35 +32,8 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
         builder:(context, child){
           return Column (
           children: [
-            ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: game!.board.theme.words.map((word) {
-                    final isFound = game!.board.foundWords.containsKey(word);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Chip(
-                        label: Text(
-                          word,
-                          style: Styles.buttonText.copyWith(
-                            decoration: isFound ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                        backgroundColor: Styles.buttonSecondaryBg,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        side: const BorderSide(color: Colors.transparent, width: 0),
-                        shape: const StadiumBorder(),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
+              ChipRow(),
+              
           ]);
         }
       );
@@ -90,9 +63,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
       return BoardCanva(
       game: game!,
       handler: (data){ 
-        try{
-          game!.updateData(data);
-        } catch (e){print("$e");}
+        print(data);
         } );
     }
     
