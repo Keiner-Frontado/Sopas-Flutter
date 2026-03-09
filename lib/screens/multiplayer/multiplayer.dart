@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
-import 'package:flutter_application_1/components/chip_row.dart';
 
 import 'package:flutter_application_1/core/constants/styles.dart' as styles;
 import 'package:flutter_application_1/core/logic/game.dart';
@@ -191,23 +190,36 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            padding: const EdgeInsets.symmetric(vertical: 1.0),
             child: Text(
               'Turno: ${game!.currentPlayer.name}',
-              style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold),
+              style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
-          if (isMyTurn)
-            ElevatedButton(
-              onPressed: _finishTurn,
-              child: const Text('Terminar turno'),
-            ),
-          OutlinedButton(
-            onPressed: () => setState((){
-              selected = 0;
-              disconnect();
-            }),
-            child: const Text("Volver al menú"),
+          // buttons row: finish turn (if applicable) and back
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isMyTurn)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  ),
+                  onPressed: _finishTurn,
+                  child: const Text('Terminar turno', style: TextStyle(fontSize: 10)),
+                ),
+              if (isMyTurn) const SizedBox(width: 4),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                ),
+                onPressed: () => setState((){
+                  selected = 0;
+                  disconnect();
+                }),
+                child: const Text("Volver al menú", style: TextStyle(fontSize: 10)),
+              ),
+            ],
           ),
         ],
       );

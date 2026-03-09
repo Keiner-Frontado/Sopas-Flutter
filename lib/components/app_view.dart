@@ -53,8 +53,7 @@ class _AppViewState extends State<AppView> {
         final height = constraints.maxHeight * height_;
     return Padding(
       padding: EdgeInsetsGeometry.symmetric(horizontal: 10, vertical: 10),
-      child: SingleChildScrollView(
-        child: Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
         Column(
@@ -79,7 +78,6 @@ class _AppViewState extends State<AppView> {
           
       ],
         )
-      )
     );
     });
   }
