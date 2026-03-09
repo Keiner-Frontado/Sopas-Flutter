@@ -39,7 +39,8 @@ import 'package:flutter_application_1/core/models/board.dart';
 }
 
   /// Sincroniza el tablero llamando a selectCell solo cuando es necesario
-  void _updateSelectionLine(Board board, dynamic startCell, int dr, int dc, int steps) {
+
+  List<int> _updateSelectionLine(Board board, dynamic startCell, int dr, int dc, int steps) {
   
   // 1. Calculamos cuántas celdas DEBERÍAMOS tener seleccionadas en total
   // (1 por la celda inicial + los pasos calculados)
@@ -60,34 +61,11 @@ import 'package:flutter_application_1/core/models/board.dart';
         
         // AQUÍ ESTÁ LA INTEGRACIÓN:
         // Llamamos a tu método existente. Él se encarga de notifyListeners, etc.
-        board.selectCell(nextR, nextC);
+        return([nextR, nextC]);
       }
     }
   } 
-  
-  // CASO B: Retrocediendo (El usuario encoge la selección)
-  else if (targetLength < currentLength) {
-    // Debemos eliminar las celdas que sobran al final de la lista.
-    int itemsToRemove = currentLength - targetLength;
-    
-    for (int k = 0; k < itemsToRemove; k++) {
-      // Asumo que puedes acceder a la lista para borrar el último.
-      // Si tienes lógica compleja al deseleccionar (ej. sonido de borrar),
-      // deberías crear un método board.deselectLast() y llamarlo aquí.
-      
-      if (board.selectedCells.isNotEmpty) {
-        // Opción 1: Manipulación directa (si tu clase Board lo permite)
-        // final removed = board.selectedCells.removeLast();
-        // removed.isSelected = false; // Si necesitas apagar flags manualmente
-        
-        // Opción 2 (Recomendada): Crear un método en tu Board
-        // board.removeLastSelection();
-      }
-    }
-    // Importante: Si modificaste la lista directamente aquí (Opción 1), 
-    // necesitas notificar al final.
-    // board.notifyListeners(); 
-  }
+  return([]);
 }
 
   List<int>? _getCellFromPosition(Offset localPosition, Board board, Size? lastSize) {
@@ -101,104 +79,49 @@ import 'package:flutter_application_1/core/models/board.dart';
     return [r, c];
   }
 
-  void onPanStart(DragStartDetails details,Board board, Size? lastSize) {
+  List<int> onPanStart(DragStartDetails details,Board board, Size? lastSize) {
     board.selectedCells.clear();
     final cell = _getCellFromPosition(details.localPosition, board, lastSize);
     if (cell != null) {
       final r = cell[0];
       final c = cell[1];
-      board.selectCell(r, c);
+      return([r, c]);
     }
+  return([]);
   }
 
-  void onPanUpdate(DragUpdateDetails details, Board board, Size? lastSize) {
-  // 1. Validaciones iniciales
-  if (board.selectedCells.isEmpty) return;
-  if (lastSize == null) return;
-  // Obtenemos la celda de INICIO (el ancla)
-  final startCell = board.selectedCells.first;
-  
-  // Necesitamos el centro en pixeles de la celda inicial para usarlo como pivote
-  // Suponiendo que tienes una función o variables para esto:
-  final cellWidth = lastSize.width / board.col;
-  final cellHeight = lastSize.height / board.row;
-  
-  final Offset startCenterPx = Offset(
-    (startCell.col * cellWidth) + (cellWidth / 2),
-    (startCell.row * cellHeight) + (cellHeight / 2)
-  );
+  List<int> onPanUpdate(DragUpdateDetails details, Board board, Size? lastSize) {
+  // if nothing has been selected or we don't know the size, ignore
+  if (board.selectedCells.isEmpty || lastSize == null) return [];
 
-  // 2. Vector del movimiento (Dedo actual - Centro de celda inicial)
-  final double dx = details.localPosition.dx - startCenterPx.dx;
-  final double dy = details.localPosition.dy - startCenterPx.dy;
-  
-  // Distancia del arrastre desde el centro
-  final double distance = sqrt(dx * dx + dy * dy);
+  // compute cell under finger
+  final cell = _getCellFromPosition(details.localPosition, board, lastSize);
+  if (cell == null) return [];
+  final int r = cell[0];
+  final int c = cell[1];
 
-  // ZONA DE ACCIÓN (Deadzone):
-  // Si no se ha alejado al menos un 75% del tamaño de una celda, no hacemos nada.
-  // Esto previene jitter y movimientos falsos al inicio.
-  if (distance < cellWidth * 0.75) {
-    // Si volvimos al centro, podríamos querer dejar solo la inicial
-    return;
-  }
+  // already selected? nothing to do
+  if (board.isCellSelected(r, c)) return [];
 
-  // 3. Determinar la dirección deseada (Joystick de 8 direcciones)
-  // atan2 devuelve radianes entre -pi y pi.
-  double angle = atan2(dy, dx); 
-  
-  // Convertimos el ángulo a una dirección de rejilla (dr, dc)
-  // (-1, -1), (-1, 0), etc.
-  List<int> direction = _getSnappedDirection(angle);
-  int dirRow = direction[0];
-  int dirCol = direction[1];
+  // ensure the new cell is adjacent to the last one
+  final last = board.selectedCells.last;
+  int dr = r - last.row;
+  int dc = c - last.col;
+  if (dr.abs() > 1 || dc.abs() > 1) return [];
 
-  // 4. Lógica de Bloqueo de Dirección
-  // Si ya tenemos una línea formada (más de 1 celda), debemos respetar esa dirección
+  // if we have a locked direction (two or more selected cells), enforce it
   if (board.selectedCells.length > 1) {
-    final secondCell = board.selectedCells[1];
-    int lockedDr = secondCell.row - startCell.row;
-    int lockedDc = secondCell.col - startCell.col;
-
-    // Normalizamos para obtener solo la dirección (-1, 0, 1)
-    lockedDr = lockedDr.clamp(-1, 1);
-    lockedDc = lockedDc.clamp(-1, 1);
-
-    // Si la nueva dirección detectada por el joystick NO coincide con la bloqueada
-    // Y tampoco es la dirección opuesta (por si quiere retroceder), ignoramos.
-    if (dirRow != lockedDr || dirCol != lockedDc) {
-      // Caso especial: El usuario está retrocediendo hacia la celda inicial.
-      // Permitimos que el algoritmo recalcule basado en la proyección.
-      // Pero si cambia drásticamente de ángulo (ej. de horizontal a vertical), retornamos.
-      return; 
+    final first = board.selectedCells.first;
+    int lockDr = board.selectedCells[1].row - first.row;
+    int lockDc = board.selectedCells[1].col - first.col;
+    lockDr = lockDr.clamp(-1, 1);
+    lockDc = lockDc.clamp(-1, 1);
+    if (dr != lockDr || dc != lockDc) {
+      // allow undoing the last step (reverse) though
+      if (!(dr == -lockDr && dc == -lockDc)) return [];
     }
   }
 
-  // 5. Proyección: ¿Cuántas celdas deberíamos seleccionar en esa dirección?
-  // En lugar de ver dónde está el dedo, proyectamos el vector sobre la rejilla.
-  // Esto "linealiza" el movimiento perfectamente.
-  
-  // Proyección de la distancia sobre el eje principal del movimiento
-  // Si es diagonal, la celda es más larga (hipotenusa), ajustamos por sqrt(2) aprox 1.41
-  double stepSize = (dirRow != 0 && dirCol != 0) 
-      ? (cellWidth * 1.414) 
-      : cellWidth;
-      
-  // Cantidad de pasos (celdas) estimados desde el origen
-  int steps = (distance / stepSize).round();
-
-  // 6. Aplicar selección
-  // Reconstruimos la lista desde 0 hasta 'steps' en la dirección calculada
-  _updateSelectionLine(board, startCell, dirRow, dirCol, steps);
+  return [r, c];
 }
 
-  void onPanEnd(DragEndDetails details, Board board) {
-    // Process selected word here if needed
-    try{
-    board.foundWord();
-    } catch (e) {
-      // ignore: avoid_print
-      print(e);
-    }
-    board.notify();
-  }

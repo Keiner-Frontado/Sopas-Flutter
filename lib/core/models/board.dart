@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/material.dart' hide Theme;
 import 'package:flutter_application_1/core/constants/game_themes.dart';
 
 class Cell {
@@ -16,6 +15,26 @@ class Cell {
     this.isUsed = false,
   });
 
+  // Convierte el objeto a un Mapa que JSON pueda entender
+  Map<String, dynamic> toJson() => {
+    'row': row,
+    'col': col,
+    'letter': letter,
+    'isSelected': isSelected,
+    'isUsed': isUsed,
+  };
+
+  // Crea una instancia de Cell a partir de un Mapa (JSON)
+  factory Cell.fromJson(Map<String, dynamic> json) {
+    return Cell(
+      row: json['row'],
+      col: json['col'],
+      letter: json['letter'],
+      isSelected: json['isSelected'],
+      isUsed: json['isUsed'],
+    );
+  }
+
   Cell copy() {
     return Cell(
       row: row,
@@ -28,25 +47,23 @@ class Cell {
 
 }
 
-class Board extends ChangeNotifier{
+class Board {
   final int row;
   final int col;
   late Theme theme;
   late List<List<Cell>> board;
-  List<String> foundWords = [];
+  Map<String, int> foundWords = {};
   List<Cell> selectedCells = [];
   String selectedWord = '';
   // Guarda el estado previo de isSelected para celdas (clave 'r:c')
   final Map<String, bool> prevIsSelected = {};
 
 
-  Board({required this.row, required this.col, required this.theme}) {
-    createBoard();
+  Board({required this.row, required this.col, required this.theme, board}) {
+    if ( board != null) {this.board = board;} else {createBoard();}
   }
   
-  void notify() {
-    notifyListeners();
-  }
+  // Board is now a plain model — notifications are handled by `Game`.
 
   String getThemeName(){
     return theme.theme;
@@ -152,7 +169,7 @@ class Board extends ChangeNotifier{
     board[r][c].isSelected = true;
   }
 
-  bool foundWord() {
+  bool foundWord([int? playerId]) {
     
     final List<bool> prevIsUsed = [];
     int modified = 0;
@@ -162,7 +179,7 @@ class Board extends ChangeNotifier{
       if (!theme.words.contains(selectedWord)) {
         throw Exception('La palabra "$selectedWord" no está en la lista de palabras del tema.');
       }
-      if (foundWords.contains(selectedWord)) {
+      if (foundWords.containsKey(selectedWord)) {
         throw Exception('La palabra "$selectedWord" ya ha sido encontrada.');
       }
 
@@ -187,7 +204,7 @@ class Board extends ChangeNotifier{
       modified++;
       }
 
-    foundWords.add(selectedWord);
+    foundWords[selectedWord] = playerId ?? 1;
     return true;
 
     } catch (e) {
@@ -224,7 +241,48 @@ class Board extends ChangeNotifier{
 
   updateSelectedCells(List<Cell> selectedCells) {
     this.selectedCells = selectedCells;
-    notify();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'board': board.map((row) => row.map((c) => c.toJson()).toList()).toList(),
+      'theme': theme.toJson(),
+      'foundWords': foundWords.entries.map((e) => {'word': e.key, 'player': e.value}).toList(),
+    };
+  }
+  // Crea un Board a partir de un JSON serializado (matriz de celdas y opcional tema)
+  factory Board.fromJson(Map<String, dynamic> json) {
+    
+    final rawBoard = json['board'] as List?;
+    if (rawBoard == null) {
+      throw Exception('Board.fromJson: no se encontró la clave "board"');
+    }
+
+    final matrix = rawBoard.map((row) {
+      return (row as List).map((cellData) {
+        return Cell.fromJson(cellData as Map<String, dynamic>);
+      }).toList();
+    }).toList();
+
+    final int rows = matrix.length;
+    final int cols = rows > 0 ? matrix[0].length : 0;
+
+    Theme theme;
+    if (json['theme'] != null) {
+      theme = Theme.fromJson(json['theme'] as Map<String, dynamic>); 
+    }else{
+      throw Exception('Board.fromJson: no se encontró la clave "theme"');
+    }
+
+    final boardObj = Board(row: rows, col: cols, theme: theme, board: matrix);
+    if (json['foundWords'] != null) {
+      try {
+        boardObj.foundWords = Map.fromEntries(
+          (json['foundWords'] as List).map((e) => MapEntry(e['word'] as String, e['player'] as int))
+        );
+      } catch (_) {}
+    }
+    return boardObj;
   }
 
   printBoard() {

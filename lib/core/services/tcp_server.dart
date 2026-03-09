@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_application_1/core/logic/game.dart';
 import 'package:flutter_application_1/core/models/client.dart';
 /*
 * TcpServerManager simula la lógica básica de un servidor TCP para pruebas.
@@ -15,18 +16,53 @@ import 'package:flutter_application_1/core/models/client.dart';
 
 
 class TcpServerManager {
+
   ServerSocket? _server;
   final List<Client> _clients = [];
+  final Map<Client, int> _clientPlayerIds = {}; // mapping of client object to assigned player id
+  Game? game;
 
   final StreamController<String> _logController = StreamController.broadcast();
+  final StreamController<Map> _dataController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
 
 
   void _log(String message) {
     final ts = DateTime.now().toLocal();
-
     _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
+
+  /// Number of currently connected clients (including host loopback).
+  int get clientCount => _clients.length;
+
+  void _sendUpdate(client, data){
+    if (game == null) return;
+
+    // Emitir al stream interno
+    _dataController.add(data);
+    _log('Estado del juego actualizado (stream interno).');
+
+    // Construir payload serializable y enviar a todos los clientes
+    try {
+
+      for (final c in _clients) {
+        try {
+          if (c == client) continue; // no se lo enviamos al que envió el update
+          c.send(data);
+        } catch (e) {
+          _log('Error enviando update al cliente ${c.name}: $e');
+        }
+      }
+      _log('Estado del juego enviado a ${_clients.length} clientes.');
+    } catch (e) {
+      _log('Error serializando/enviando estado del juego: $e');
+    }
+  }
+
+  void setInitGame(Game initGame) {
+    game = initGame;
+  }
+
 
   /// Crea y arranca el servidor TCP en el puerto indicado.
   Future<void> crearConexion(int port, {bool bindAny = false}) async {
@@ -83,28 +119,73 @@ class TcpServerManager {
     final client = Client(clientSocket);
     _clients.add(client);
     _log('Cliente conectado desde ${client.ip}:${client.port}');
+    
+    // assign player id based on connection source
+    // localhost connections are always player 1 (host)
+    // the first non-localhost connection is player 2
+    // additional connections are spectators (0)
+    final isLoopback = client.socket.remoteAddress.isLoopback;
+    int assigned = 0;
+    if (game != null) {
+      if (isLoopback) {
+        assigned = 1;
+      } else {
+        final alreadyHas2 = _clientPlayerIds.values.contains(2);
+        if (!alreadyHas2) {
+          assigned = 2;
+        }
+        // else remains 0 (spectator)
+      }
+    }
+    _clientPlayerIds[client] = assigned;
+    client.setName('p$assigned');
+
+    // when a client connects we send the full game plus the assigned id so
+    // the frontend can know which player it controls
+    if (game != null) {
+      client.send({'type': 'connect', 'content': game!.toJson(), 'player': assigned});
+    }
+
+    // if a new non-host player has joined, notify all existing clients
+    // so the host UI can react accordingly (e.g. enable interaction).
+    if (assigned == 2) {
+      _log('Jugador 2 se ha unido, notificando a todos.');
+      for (final c in _clients) {
+        try {
+          c.send({'type': 'player_joined', 'player': 2});
+        } catch (e) {
+          _log('Error notificando unión a ${c.name}: $e');
+        }
+      }
+    }
 
     client.stream
     .transform(LineSplitter())
     .listen((String dataString) {
       try {
-
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');
-        /// ENVIAR UNFORMACIÓN A CADA CLIENTE CONECTADO
-        for (final c in _clients) {
-          if (c == client) continue;
-          c.send({
-            ...data
-          });
+
+        // turn enforcement: ignore actions from clients that aren't the current
+        final senderId = _clientPlayerIds[client] ?? 0;
+        if (game != null && senderId != 0) {
+          // only allow state changing messages from the player whose turn it is
+          if (senderId != game!.currentPlayer.id &&
+              data['type'] != 'connect') {
+            _log('Ignorando mensaje fuera de turno de $senderId');
+            return;
+          }
         }
-        // Echo para que el cliente vea status de su envío
-        client.send({
-          'from': "server",
-          'msg': "Mensaje enviado."
-          });
-        
+
+        try{
+          game!.updateData(data);
+        }catch (e){
+          _log('Error actualizando estado del juego: $e');
+        }
+
+        _sendUpdate(client, data);
+
       } catch (e) {
         _log('Error decodificando datos: $e');
       }
@@ -112,10 +193,12 @@ class TcpServerManager {
       
       _log('Cliente desconectado ${client.ip}:${client.port}');
       _clients.remove(client);
+      _clientPlayerIds.remove(client);
     }, onError: (err) {
 
       _log('Error en cliente ${client.ip}:${client.port}: $err');
       _clients.remove(client);
+      _clientPlayerIds.remove(client);
     });
       
   }
@@ -140,12 +223,14 @@ class TcpServerManager {
     } catch (e) {
       _log('Error cerrando servidor: $e');
     }
+    // Quitar listener de game si existe
   }
 
   /// Limpia recursos internos.
   Future<void> dispose() async {
     await cerrarConexion();
     await _logController.close();
+    await _dataController.close();
   }
 
 

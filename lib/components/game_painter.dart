@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 
 class GamePainter extends CustomPainter {
-  final Board board;
+  final Game game;
 
-  GamePainter({required this.board}) : super(repaint: board);
-
-  Size? lastSize;
+  GamePainter({required this.game}) : super(repaint: game);
 
 
   @override
   void paint(Canvas canvas, Size size) {
-    lastSize = size;
+    final board = game.board;
     if (board.selectedCells.isEmpty) return;
 
     final cellW = size.width / board.col;
     final cellH = size.height / board.row;
 
     final points = board.selectedCells
-        .map((cell) => Offset(cell.col * cellW + cellW / 2, cell.row * cellH + cellH / 2))
-        .toList();
+      .map((cell) => Offset(cell.col * cellW + cellW / 2, cell.row * cellH + cellH / 2))
+      .toList();
 
     if (points.length > 1) {
       final linePaint = Paint()

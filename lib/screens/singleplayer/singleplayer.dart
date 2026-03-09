@@ -1,10 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
-import 'package:flutter_application_1/components/chip_row.dart';
-import 'package:flutter_application_1/core/constants/game_themes.dart';
 import 'package:flutter_application_1/core/constants/styles.dart';
-import 'package:flutter_application_1/core/models/board.dart';
+import 'package:flutter_application_1/core/logic/game.dart';
 
 class SingleplayerScreen extends StatefulWidget {
   const SingleplayerScreen({super.key});
@@ -15,28 +14,52 @@ class SingleplayerScreen extends StatefulWidget {
 
 class _SingleplayerScreen extends State<SingleplayerScreen> {
   
-  late Board? board;
+  late Game? game;
 
   Widget _setTitle(){
-    if (board == null) return Text("UN JUGADOR", style: Styles.titleText);
+    if (game == null) return Text("UN JUGADOR", style: Styles.titleText);
     return Text(
-      board!.getThemeName(),
+      game!.board.getThemeName(),
       style: Styles.titleText
     );
   }
 
   Widget _setSubtitle() {
     
-    if (board != null) {
+    if (game != null) {
       return ListenableBuilder(
-        listenable: board!,
+        listenable: game!,
         builder:(context, child){
           return Column (
           children: [
-            ChipRow(
-            buttonTexts: board!.theme.words
-                .where((w) => !board!.foundWords.contains(w))
-                .toList(),
+            ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: game!.board.theme.words.map((word) {
+                    final isFound = game!.board.foundWords.containsKey(word);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Chip(
+                        label: Text(
+                          word,
+                          style: Styles.buttonText.copyWith(
+                            decoration: isFound ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                        backgroundColor: Styles.buttonSecondaryBg,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        side: const BorderSide(color: Colors.transparent, width: 0),
+                        shape: const StadiumBorder(),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ]);
         }
@@ -50,10 +73,10 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   }
 
   Widget? _setFooter(){
-    if (board != null){
+    if (game != null){
       return ElevatedButton(
         onPressed: () =>
-          setState(() => board= null),
+          setState(() => game= null),
 
         child: Text("Reiniciar Juego"),
       );
@@ -63,7 +86,15 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget _setChild(){
 
-    if (board != null) return BoardCanva(board: board!);
+    if (game != null) {
+      return BoardCanva(
+      game: game!,
+      handler: (data){ 
+        try{
+          game!.updateData(data);
+        } catch (e){print("$e");}
+        } );
+    }
     
     return ElevatedButton(
       onPressed: () =>
@@ -74,13 +105,13 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   }
 
   void _createBoard() {
-    board= Board(row: 10, col:10, theme: Themes.selectTheme());
+    game = Game(data: {'size': 10});
   }
 
   @override
   void initState() {
     super.initState();
-    board = null;
+    game = null;
   }
 
   @override

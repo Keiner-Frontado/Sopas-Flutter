@@ -39,10 +39,7 @@ class _Layout extends State<Layout> {
         index: selected,
         children: [
           SingleplayerScreen(),
-          AppView(
-            title: Text("MULTIJUGADOR", style: Styles.titleText),
-            child: MultiplayerScreen()
-          ),
+          MultiplayerScreen(),
           AppView(
             title: Text("PERFIL", style: Styles.titleText),
             footer: ElevatedButton(

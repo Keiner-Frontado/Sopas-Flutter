@@ -12,6 +12,24 @@ class Theme {
     required this.theme,
     required this.words,
   });
+
+  // Serialización: Convierte el objeto a un Map
+  Map<String, dynamic> toJson() => {
+    'rows': rows,
+    'cols': cols,
+    'theme': theme,
+    'words': words,
+  };
+
+  // Deserialización: Crea el objeto desde un Map
+  factory Theme.fromJson(Map<String, dynamic> json) {
+    return Theme(
+      rows: json['rows'],
+      cols: json['cols'],
+      theme: json['theme'],
+      words: List<String>.from(json['words']),
+    );
+  }
 }
 
 class Themes{

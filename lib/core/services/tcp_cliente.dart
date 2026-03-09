@@ -29,7 +29,7 @@ class TcpClientManager {
 
   void _showData(Map data){
     _dataController.add(data);
-    _log('Datos recibidos: ${data.toString()}');
+    _log('Datos recibidos: $data');
   }
 
   /// Conecta como cliente a un servidor TCP remoto/local.
@@ -52,13 +52,16 @@ class TcpClientManager {
       client!.stream
       .transform(LineSplitter())
       .listen((String dataString) {
+
         try {
-          
           final data = jsonDecode(dataString) as Map<String, dynamic>;
+
+          _log('DATA RECIBIDA CLIENTE: $dataString');
+          
           _showData(data);
 
         } catch (e) {
-          _log('Error decodificando respuesta: $e');
+          _log('Error decodificando respuesta: $e \n\n Data: $dataString');
         }
       }, onDone: () {
         _log('Conexión del cliente cerrada por el servidor');
