@@ -6,12 +6,9 @@ class GamePainter extends CustomPainter {
 
   GamePainter({required this.game}) : super(repaint: game);
 
-  Size? lastSize;
-
 
   @override
   void paint(Canvas canvas, Size size) {
-    lastSize = size;
     final board = game.board;
     if (board.selectedCells.isEmpty) return;
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
@@ -29,6 +30,9 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   String? ip, mode;
   int? port, size;
   Game? game;
+  /// id del jugador local (1 o 2). Se asigna en onPlay según el modo.
+  int? localPlayerId;
+  // flags retained for future feature expansion (currently unused)
   bool _serverRunning = false;
   bool _clientConnected = false;
 
@@ -42,6 +46,16 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     // enviar los datos al servidor
     _tcpClient.enviar(data);
 
+  }
+
+  /// Llamado cuando el jugador local desea terminar su turno.
+  void _finishTurn() {
+    if (game == null) return;
+    // actualizamos localmente (el servidor también lo hará al recibir el mensaje)
+    setState(() {
+      game!.finishTurn();
+    });
+    _onChange({'type': 'finish_turn'});
   }
 
   void disconnect() {
@@ -73,9 +87,16 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
       port = received['port'];
       size = received['size'] ?? 7;
       mode = received['mode'];
-      if(mode == 'server') createServer();
-      if(mode == 'client') connectServer();
-    } );
+      // el host siempre será jugador 1, el cliente jugador 2
+      if (mode == 'server') {
+        localPlayerId = 1;
+        createServer();
+      }
+      if (mode == 'client') {
+        localPlayerId = 2;
+        connectServer();
+      }
+    });
     // ignore: avoid_print
     print("""
       IP: $ip
@@ -90,11 +111,37 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         builder:(context, child){
           return Column (
           children: [
-            ChipRow(
-            buttonTexts: game!.board.theme.words
-                .where((w) => !game!.board.foundWords.contains(w))
-                .toList(),
-            ),
+            ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: game!.board.theme.words.map((word) {
+                    final isFound = game!.board.foundWords.containsKey(word);
+                    final finderId = game!.board.foundWords[word];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Chip(
+                        label: Text(
+                          word,
+                          style: styles.Styles.buttonText.copyWith(
+                            decoration: isFound ? TextDecoration.lineThrough : null,
+                            color: isFound ? (finderId == 1 ? Colors.lightBlue : Colors.pink) : null,
+                          ),
+                        ),
+                        backgroundColor: styles.Styles.buttonSecondaryBg,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        side: const BorderSide(color: Colors.transparent, width: 0),
+                        shape: const StadiumBorder(),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              ),
           ]);
         }
       );}
@@ -106,19 +153,67 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   }
 
   Widget _setChild() {
-    if (game != null) return BoardCanva(game: game!, handler: _onChange);
+    if (game != null) {
+      // The board itself doesn't need the turn controls anymore; they live in the footer.
+      // We still listen to the game so the board can update when state changes (e.g. found words).
+      return ListenableBuilder(
+        listenable: game!,
+        builder: (context, child) {
+          final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
+          return Column(
+            children: [
+              Expanded(
+                child: BoardCanva(
+                  game: game!,
+                  handler: _onChange,
+                  allowInteraction: isMyTurn,
+                ),
+              ),
+            ],
+          );
+        },
+
+      );
+    }
 
     return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: 50,
-        children: _setMenu()
-      );
+        children: _setMenu());
   }
 
   Widget? _setFooter() {
     if (selected == 0) return null;
-    return OutlinedButton(
+    // When a game is active we display turn info and finish button together with the back button
+    if (game != null) {
+      final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              'Turno: ${game!.currentPlayer.name}',
+              style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (isMyTurn)
+            ElevatedButton(
+              onPressed: _finishTurn,
+              child: const Text('Terminar turno'),
+            ),
+          OutlinedButton(
+            onPressed: () => setState((){
+              selected = 0;
+              disconnect();
+            }),
+            child: const Text("Volver al menú"),
+          ),
+        ],
+      );
+    }
 
+    return OutlinedButton(
       onPressed: () => setState((){
         selected = 0;
         disconnect();
@@ -206,6 +301,9 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
           setState(() {
             game = gameInstance;
+            if (mode == 'client' && data['player'] != null) {
+              localPlayerId = data['player'];
+            }
           });
         } catch (e) {
           // ignore: avoid_print
@@ -213,12 +311,14 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         }
       }else{
         
-        try{
-          game!.updateData(data);
-        } catch (e) {
-          // ignore: avoid_print
-          print('Error procesando game update payload: $e');
-        }
+        setState(() {
+          try{
+            game!.updateData(data);
+          } catch (e) {
+            // ignore: avoid_print
+            print('Error procesando game update payload: $e');
+          }
+        });
       }
     });
 

@@ -158,10 +158,18 @@ import 'package:flutter_application_1/core/models/board.dart';
   // Esto "linealiza" el movimiento perfectamente.
   
   // Proyección de la distancia sobre el eje principal del movimiento
-  // Si es diagonal, la celda es más larga (hipotenusa), ajustamos por sqrt(2) aprox 1.41
-  double stepSize = (dirRow != 0 && dirCol != 0) 
-      ? (cellWidth * 1.414) 
-      : cellWidth;
+  // Ajustamos por el tamaño de la celda en la dirección del movimiento
+  double stepSize;
+  if (dirRow != 0 && dirCol != 0) {
+    // Diagonal: hipotenusa
+    stepSize = sqrt(cellWidth * cellWidth + cellHeight * cellHeight);
+  } else if (dirRow != 0) {
+    // Vertical
+    stepSize = cellHeight;
+  } else {
+    // Horizontal
+    stepSize = cellWidth;
+  }
       
   // Cantidad de pasos (celdas) estimados desde el origen
   int steps = (distance / stepSize).round();

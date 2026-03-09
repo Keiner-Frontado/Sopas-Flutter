@@ -19,6 +19,7 @@ class TcpServerManager {
 
   ServerSocket? _server;
   final List<Client> _clients = [];
+  final Map<Client, int> _clientPlayerIds = {}; // mapping of client object to assigned player id
   Game? game;
 
   final StreamController<String> _logController = StreamController.broadcast();
@@ -115,8 +116,32 @@ class TcpServerManager {
     final client = Client(clientSocket);
     _clients.add(client);
     _log('Cliente conectado desde ${client.ip}:${client.port}');
-    if (game != null) client.send({'type': 'connect', 'content' : game!.toJson()});
     
+    // assign player id based on connection source
+    // localhost connections are always player 1 (host)
+    // the first non-localhost connection is player 2
+    // additional connections are spectators (0)
+    final isLoopback = client.socket.remoteAddress.isLoopback;
+    int assigned = 0;
+    if (game != null) {
+      if (isLoopback) {
+        assigned = 1;
+      } else {
+        final alreadyHas2 = _clientPlayerIds.values.contains(2);
+        if (!alreadyHas2) {
+          assigned = 2;
+        }
+        // else remains 0 (spectator)
+      }
+    }
+    _clientPlayerIds[client] = assigned;
+    client.setName('p$assigned');
+
+    // when a client connects we send the full game plus the assigned id so
+    // the frontend can know which player it controls
+    if (game != null) {
+      client.send({'type': 'connect', 'content': game!.toJson(), 'player': assigned});
+    }
 
     client.stream
     .transform(LineSplitter())
@@ -125,13 +150,24 @@ class TcpServerManager {
         final data = jsonDecode(dataString) as Map<String, dynamic>;
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');
+
+        // turn enforcement: ignore actions from clients that aren't the current
+        final senderId = _clientPlayerIds[client] ?? 0;
+        if (game != null && senderId != 0) {
+          // only allow state changing messages from the player whose turn it is
+          if (senderId != game!.currentPlayer.id &&
+              data['type'] != 'connect') {
+            _log('Ignorando mensaje fuera de turno de $senderId');
+            return;
+          }
+        }
+
         try{
           game!.updateData(data);
         }catch (e){
           _log('Error actualizando estado del juego: $e');
         }
 
-        
         _sendUpdate(client, data);
 
       } catch (e) {
@@ -141,10 +177,12 @@ class TcpServerManager {
       
       _log('Cliente desconectado ${client.ip}:${client.port}');
       _clients.remove(client);
+      _clientPlayerIds.remove(client);
     }, onError: (err) {
 
       _log('Error en cliente ${client.ip}:${client.port}: $err');
       _clients.remove(client);
+      _clientPlayerIds.remove(client);
     });
       
   }
