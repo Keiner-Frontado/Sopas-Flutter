@@ -1,12 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/constants/styles.dart';
+import 'package:flutter_application_1/core/constants/styles.dart' as styles;
 
 class ChipRow extends StatelessWidget {
 
-  final List<String> buttonTexts;
-  const ChipRow({super.key, required this.buttonTexts});
+  final List<String> words;
+  final Map<String, int> foundWords;
+  const ChipRow({super.key, required this.words, required this.foundWords});
 
 
   @override
@@ -15,38 +16,32 @@ class ChipRow extends StatelessWidget {
       behavior: ScrollConfiguration.of(context).copyWith(
         dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
       ),
-      child:SingleChildScrollView(
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: buttonTexts.map((text) {
+          children: words.map((word) {
+            final isFound = foundWords.containsKey(word);
+            final finderId = foundWords[word];
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Chip(
-                // 1. Avatar: El icono a la izquierda (opcional)
-                avatar: null,
-                
-                // 2. Label: El texto principal
                 label: Text(
-                  text,
-                  style: Styles.buttonText
+                  word,
+                  style: styles.Styles.buttonText.copyWith(
+                    decoration: isFound ? TextDecoration.lineThrough : null,
+                    color: isFound ? (finderId == 1 ? Colors.lightBlue : Colors.pink) : null,
+                  ),
                 ),
-
-                // 3. Estilos visuales
-                backgroundColor: Styles.buttonSecondaryBg,
+                backgroundColor: styles.Styles.buttonSecondaryBg,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                
-                // Eliminar el borde gris por defecto del Chip si quieres que sea plano
                 side: const BorderSide(color: Colors.transparent, width: 0),
-                
-                // Asegurar la forma totalmente redondeada
-                shape: const StadiumBorder(), 
+                shape: const StadiumBorder(),
               ),
             );
-          }
-          ).toList(),
+          }).toList(),
         ),
-      )
-    );
+      ),
+    ); 
   }
 }

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
+import 'package:flutter_application_1/components/chip_row.dart';
 
 import 'package:flutter_application_1/core/constants/styles.dart' as styles;
 import 'package:flutter_application_1/core/logic/game.dart';
@@ -39,9 +40,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   int? localPlayerId;
   // estado de la conexión y el oponente, usado para mostrar mensajes de espera y controlar la interacción con el tablero
   bool _opponentConnected = false;
-  // flags retained for future feature expansion (currently unused)
-  bool _serverRunning = false;
-  bool _clientConnected = false;
+
 
   // subscripciones a logs y datos del servidor para debug y actualización de estado
   StreamSubscription<String>? _logSub;
@@ -72,8 +71,6 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   void disconnect() {
     game = null;
     _opponentConnected = false;
-    _serverRunning = false;
-    _clientConnected = false;
     _logSub?.cancel();
     _logSubClient?.cancel();
     _dataSubClient?.cancel();
@@ -129,37 +126,11 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         builder:(context, child){
           return Column (
           children: [
-            ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: game!.board.theme.words.map((word) {
-                    final isFound = game!.board.foundWords.containsKey(word);
-                    final finderId = game!.board.foundWords[word];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Chip(
-                        label: Text(
-                          word,
-                          style: styles.Styles.buttonText.copyWith(
-                            decoration: isFound ? TextDecoration.lineThrough : null,
-                            color: isFound ? (finderId == 1 ? Colors.lightBlue : Colors.pink) : null,
-                          ),
-                        ),
-                        backgroundColor: styles.Styles.buttonSecondaryBg,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        side: const BorderSide(color: Colors.transparent, width: 0),
-                        shape: const StadiumBorder(),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              ),
+            ChipRow(
+              words: game!.board.theme.words,
+              foundWords: game!.board.foundWords
+            ),
+
           ]);
         }
       );}
@@ -319,8 +290,6 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
             // Para depuración: mostrar el estado inicial del juego en la consola
       print('[---] Game created: \n\n ${initGame.toJson()}');
       _tcp.setInitGame(initGame);
-
-      setState(() => _serverRunning = true );
       connectServer();
 
     } catch (_) {
@@ -372,11 +341,6 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     });
 
     await _tcpClient.conectar(ip!, port!);
-
-    // si la conexión es exitosa, el cliente recibirá el estado inicial del juego desde el servidor y se lo asignará a su variable de estado 
-    if (_tcpClient.client != null) {
-      setState(() => _clientConnected = true);
-    }
 
 
   }
