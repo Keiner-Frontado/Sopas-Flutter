@@ -13,6 +13,7 @@ import 'package:flutter_application_1/core/services/tcp_server.dart';
 import 'package:flutter_application_1/screens/multiplayer/client_config.dart';
 import 'package:flutter_application_1/screens/multiplayer/server_config.dart';
 
+
 class MultiplayerScreen extends StatefulWidget {
   const MultiplayerScreen({super.key});
 
@@ -22,21 +23,27 @@ class MultiplayerScreen extends StatefulWidget {
 
 class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
+  // gestión de conexión TCP (servidor y cliente)
   final TcpServerManager _tcp = TcpServerManager();
   final TcpClientManager _tcpClient = TcpClientManager();
   
+  // estado de la pantalla: 0 = menú, 1 = creando partida, 2 = uniendo a partida
   int selected = 0;
+  // datos de la partida y conexión
   String? ip, mode;
+  // el tamaño de la sopa se decide al crear la partida, pero lo guardamos aquí para que el cliente lo reciba al conectarse
   int? port, size;
+  // estado del juego y jugador local
   Game? game;
   /// id del jugador local (1 o 2). Se asigna en onPlay según el modo.
   int? localPlayerId;
-  // flag to know when the other player has joined the match
+  // estado de la conexión y el oponente, usado para mostrar mensajes de espera y controlar la interacción con el tablero
   bool _opponentConnected = false;
   // flags retained for future feature expansion (currently unused)
   bool _serverRunning = false;
   bool _clientConnected = false;
 
+  // subscripciones a logs y datos del servidor para debug y actualización de estado
   StreamSubscription<String>? _logSub;
 
   StreamSubscription<String>? _logSubClient;
@@ -54,11 +61,14 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     if (game == null) return;
     // actualizamos localmente (el servidor también lo hará al recibir el mensaje)
     setState(() {
+      // lógica de turno: si el jugador encontró al menos una palabra válida, sigue jugando; si no, se cambia el turno
       game!.finishTurn();
     });
+    // notificamos al servidor para que actualice el estado del juego y se lo envíe al otro jugador
     _onChange({'type': 'finish_turn'});
   }
 
+  /// Llamado para limpiar el estado de la partida y desconectar de la red, usado al volver al menú principal o al reiniciar el juego.
   void disconnect() {
     game = null;
     _opponentConnected = false;
@@ -71,6 +81,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     _tcpClient.desconectar();
   }
 
+  // UI builders
   @override
   Widget build(BuildContext context) {
     return AppView(
@@ -83,6 +94,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     
   }
 
+  // el título muestra el modo de juego y la conexión
   void onPlay(Map received) {
     setState(() {
       ip = received['ip'];
@@ -93,12 +105,13 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
       if (mode == 'server') {
         localPlayerId = 1;
         createServer();
-        // host should wait for opponent
+        // el host espera a que el cliente se conecte, así que no hay oponente al iniciar la partida
         _opponentConnected = false;
       }
+      // el cliente se conecta directamente al host, así que ambos jugadores ya están presentes al iniciar la partida
       if (mode == 'client') {
         localPlayerId = 2;
-        _opponentConnected = true; // host is already present
+        _opponentConnected = true; // el cliente asume que el host ya está esperando, así que se muestra el tablero directamente al conectarse exitosamente al servidor. Si el cliente se conecta antes de que el host inicie su servidor, la conexión fallará y se quedará en el menú principal.
         connectServer();
       }
     });
@@ -108,7 +121,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
       PORT: $port
     """);
   }
-
+  // el subtítulo muestra las palabras por encontrar, tachando las que ya se han encontrado y coloreándolas según quién las encontró
   Widget _setSubtitle() {
     if (game != null){
       return ListenableBuilder(
@@ -156,11 +169,10 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         style: styles.Styles.hintText
       );
   }
-
+  
   Widget _setChild() {
     if (game != null) {
-      // The board itself doesn't need the turn controls anymore; they live in the footer.
-      // We still listen to the game so the board can update when state changes (e.g. found words).
+      // el tablero solo es interactivo cuando es nuestro turno y el oponente ya se ha conectado (en el caso del host)
       return ListenableBuilder(
         listenable: game!,
         builder: (context, child) {
@@ -171,7 +183,6 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
                 child: BoardCanva(
                   game: game!,
                   handler: _onChange,
-                  // only allow interaction when it's our turn and the opponent is present (host waits for player 2)
                   allowInteraction: isMyTurn && _opponentConnected,
                 ),
               ),
@@ -190,7 +201,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
   Widget? _setFooter() {
     if (selected == 0) return null;
-    // When a game is active we display turn info and finish button together with the back button
+    // el botón de volver al menú solo se muestra cuando estamos en una partida o en la pantalla de configuración, no en el menú principal
     if (game != null) {
       final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
       return Column(
@@ -211,7 +222,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
                 style: styles.Styles.hintText.copyWith(fontSize: 10),
               ),
             ),
-          // buttons row: finish turn (if applicable) and back
+          // el botón de terminar turno solo se habilita si es nuestro turno y el oponente ya se ha conectado (en el caso del host)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -239,7 +250,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         ],
       );
     }
-
+  
     return OutlinedButton(
       onPressed: () => setState((){
         selected = 0;

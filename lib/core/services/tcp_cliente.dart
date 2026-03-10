@@ -12,21 +12,21 @@ import 'package:flutter_application_1/core/models/client.dart';
 / - desconectar()
 / - dispose()
 */
+// El cliente se conecta a un servidor TCP remoto/local, envía mensajes y recibe respuestas.
 class TcpClientManager {
-
+  // El cliente TCP activo, si existe. Null si no hay conexión.
   Client? client;
-
+  // StreamController para emitir logs de eventos (conexiones, errores, mensajes).
   final StreamController<String> _logController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
-
   final StreamController<Map> _dataController = StreamController.broadcast();
   Stream<Map> get onData => _dataController.stream;
-
+  // Método privado para agregar mensajes al log con formato de timestamp.
   void _log(String message) {
     final ts = DateTime.now().toLocal();
     _logController.add('[ *CLIENTE* (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})] $message');
   }
-
+  // Método privado para emitir datos recibidos a través del stream onData.
   void _showData(Map data){
     _dataController.add(data);
     _log('Datos recibidos: $data');
@@ -38,17 +38,17 @@ class TcpClientManager {
       _log('No es posible usar Socket.connect en Flutter Web desde dart:io. Operación omitida.');
       return;
     }
-
+    // Verificar si ya hay un cliente conectado antes de intentar conectar.
     if (client != null) {
       _log('Cliente ya conectado a ${client!.ip}:${client!.port}');
       return;
     }
-
+    // Intentar conectar al servidor TCP. Si falla, se lanza una excepción que el llamador debe manejar.
     try {
       Socket clientSocket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
       _log('Cliente conectado a $host:$port');
       client = Client(clientSocket);
-
+      
       client!.stream
       .transform(LineSplitter())
       .listen((String dataString) {
@@ -76,7 +76,7 @@ class TcpClientManager {
     }
   }
 
-  /// Envía un mensaje (string) desde el cliente conectado.
+  // envía un mensaje (string) desde el cliente conectado.
   Future<void> enviar(Map<String,dynamic> msgData) async {
     if (client == null) {
       _log('No hay cliente conectado para enviar mensaje');

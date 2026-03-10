@@ -1,9 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
 import 'package:flutter_application_1/core/constants/styles.dart';
 import 'package:flutter_application_1/core/logic/game.dart';
+import 'package:flutter_application_1/components/chip_row.dart';
 
 class SingleplayerScreen extends StatefulWidget {
   const SingleplayerScreen({super.key});

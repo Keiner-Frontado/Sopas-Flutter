@@ -19,20 +19,20 @@ class TcpServerManager {
 
   ServerSocket? _server;
   final List<Client> _clients = [];
-  final Map<Client, int> _clientPlayerIds = {}; // mapping of client object to assigned player id
+  final Map<Client, int> _clientPlayerIds = {}; // cliente -> id jugador (0=spectator, 1=host, 2=guest)
   Game? game;
-
+  // StreamControllers para emitir logs de eventos y actualizaciones de juego.
   final StreamController<String> _logController = StreamController.broadcast();
   final StreamController<Map> _dataController = StreamController.broadcast();
   Stream<String> get onLog => _logController.stream;
 
-
+  // Método privado para agregar mensajes al log con formato de timestamp.
   void _log(String message) {
     final ts = DateTime.now().toLocal();
     _logController.add('[SERVIDOR] (${ts.day}/${ts.month} - ${ts.hour}:${(ts.minute>9) ? ts.minute : '0${ts.minute}'})\n\t $message \n');
   }
 
-  /// Number of currently connected clients (including host loopback).
+  /// Número de clientes actualmente conectados al servidor.
   int get clientCount => _clients.length;
 
   void _sendUpdate(client, data){
@@ -120,10 +120,7 @@ class TcpServerManager {
     _clients.add(client);
     _log('Cliente conectado desde ${client.ip}:${client.port}');
     
-    // assign player id based on connection source
-    // localhost connections are always player 1 (host)
-    // the first non-localhost connection is player 2
-    // additional connections are spectators (0)
+    // Asignar rol de jugador o espectador según el orden de conexión y si el juego ya ha comenzado.
     final isLoopback = client.socket.remoteAddress.isLoopback;
     int assigned = 0;
     if (game != null) {
@@ -140,14 +137,14 @@ class TcpServerManager {
     _clientPlayerIds[client] = assigned;
     client.setName('p$assigned');
 
-    // when a client connects we send the full game plus the assigned id so
-    // the frontend can know which player it controls
+    // Informar al cliente de su rol asignado (host/jugador 1, invitado/jugador 2, espectador) 
+    // para que el frontend pueda ajustar la interfaz y controlar permisos de juego según corresponda. 
+    // También se puede incluir el estado inicial del juego si ya existe, para que el cliente pueda sincronizarse inmediatamente al unirse.
     if (game != null) {
       client.send({'type': 'connect', 'content': game!.toJson(), 'player': assigned});
     }
 
-    // if a new non-host player has joined, notify all existing clients
-    // so the host UI can react accordingly (e.g. enable interaction).
+    // Notificar a todos los clientes que un nuevo jugador se ha unido, si es el jugador 2 (invitado).
     if (assigned == 2) {
       _log('Jugador 2 se ha unido, notificando a todos.');
       for (final c in _clients) {
@@ -159,6 +156,7 @@ class TcpServerManager {
       }
     }
 
+    // Escuchar mensajes de este cliente
     client.stream
     .transform(LineSplitter())
     .listen((String dataString) {
@@ -167,10 +165,10 @@ class TcpServerManager {
 
         _log('Mensaje de ${client.name} -> ${data.toString()}');
 
-        // turn enforcement: ignore actions from clients that aren't the current
+        // Validar que el cliente que envió el mensaje tiene derecho a hacerlo (es su turno o es un mensaje de conexión)
         final senderId = _clientPlayerIds[client] ?? 0;
         if (game != null && senderId != 0) {
-          // only allow state changing messages from the player whose turn it is
+          // el cliente que envió el mensaje no es espectador, pero tampoco es su turno
           if (senderId != game!.currentPlayer.id &&
               data['type'] != 'connect') {
             _log('Ignorando mensaje fuera de turno de $senderId');

@@ -68,6 +68,7 @@ import 'package:flutter_application_1/core/models/board.dart';
   return([]);
 }
 
+  //
   List<int>? _getCellFromPosition(Offset localPosition, Board board, Size? lastSize) {
     final size = lastSize;
     if (size == null) return null;
@@ -90,26 +91,29 @@ import 'package:flutter_application_1/core/models/board.dart';
   return([]);
   }
 
+  // Devuelve la celda a seleccionar o deseleccionar según el movimiento del dedo, o null si no hay cambios
   List<int> onPanUpdate(DragUpdateDetails details, Board board, Size? lastSize) {
-  // if nothing has been selected or we don't know the size, ignore
+  // Si no hay celdas seleccionadas aún, no tenemos una dirección fija, así que solo intentamos seleccionar la celda bajo el dedo (sin restricciones de dirección) 
   if (board.selectedCells.isEmpty || lastSize == null) return [];
 
-  // compute cell under finger
+  // Obtenemos la celda bajo el dedo y calculamos la dirección del movimiento
   final cell = _getCellFromPosition(details.localPosition, board, lastSize);
+  // Si no hay celda bajo el dedo, no hacemos nada
   if (cell == null) return [];
   final int r = cell[0];
   final int c = cell[1];
 
-  // already selected? nothing to do
+  // Si la celda ya está seleccionada, no hacemos nada (esto evita que el usuario "salte" celdas y luego vuelva a ellas para corregir su dirección)
   if (board.isCellSelected(r, c)) return [];
 
-  // ensure the new cell is adjacent to the last one
+  // Obtenemos la última celda seleccionada para calcular la dirección del movimiento
   final last = board.selectedCells.last;
   int dr = r - last.row;
   int dc = c - last.col;
+  // Si el movimiento es demasiado grande (el usuario saltó varias celdas), no hacemos nada. Esto también ayuda a evitar problemas si el usuario mueve el dedo muy rápido.
   if (dr.abs() > 1 || dc.abs() > 1) return [];
 
-  // if we have a locked direction (two or more selected cells), enforce it
+  // Si ya tenemos al menos 2 celdas seleccionadas, bloqueamos la dirección para evitar que el usuario cambie de opinión a mitad de camino. Solo permitimos deshacer el último paso (revertir la dirección) para corregir errores.
   if (board.selectedCells.length > 1) {
     final first = board.selectedCells.first;
     int lockDr = board.selectedCells[1].row - first.row;
@@ -117,7 +121,6 @@ import 'package:flutter_application_1/core/models/board.dart';
     lockDr = lockDr.clamp(-1, 1);
     lockDc = lockDc.clamp(-1, 1);
     if (dr != lockDr || dc != lockDc) {
-      // allow undoing the last step (reverse) though
       if (!(dr == -lockDr && dc == -lockDc)) return [];
     }
   }
