@@ -1,6 +1,7 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/components/app_view.dart';
 import 'package:flutter_application_1/components/board_canva.dart';
@@ -112,7 +113,6 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
         connectServer();
       }
     });
-    // ignore: avoid_print
     print("""
       IP: $ip
       PORT: $port
@@ -175,50 +175,55 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     // el botón de volver al menú solo se muestra cuando estamos en una partida o en la pantalla de configuración, no en el menú principal
     if (game != null) {
       final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 1.0),
-            child: Text(
-              'Turno: ${game!.currentPlayer.name}',
-              style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ),
-          if (!_opponentConnected)
+      return ListenableBuilder(
+        listenable: game!,
+        builder: (context, child) {
+          return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
+              padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Text(
-                'Esperando jugador 2...',
-                style: styles.Styles.hintText.copyWith(fontSize: 10),
+                'Turno: ${game!.currentPlayer.name}',
+                style: styles.Styles.text.copyWith(fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ),
-          // el botón de terminar turno solo se habilita si es nuestro turno y el oponente ya se ha conectado (en el caso del host)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isMyTurn)
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
+            if (!_opponentConnected)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                child: Text(
+                  'Esperando jugador 2...',
+                  style: styles.Styles.hintText.copyWith(fontSize: 10),
+                ),
+              ),
+            // el botón de terminar turno solo se habilita si es nuestro turno y el oponente ya se ha conectado (en el caso del host)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isMyTurn)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    ),
+                    onPressed: (_opponentConnected ? _finishTurn : null),
+                    child: const Text('Terminar turno', style: TextStyle(fontSize: 10)),
+                  ),
+                if (isMyTurn) const SizedBox(width: 4),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   ),
-                  onPressed: (_opponentConnected ? _finishTurn : null),
-                  child: const Text('Terminar turno', style: TextStyle(fontSize: 10)),
+                  onPressed: () => setState((){
+                    selected = 0;
+                    disconnect();
+                  }),
+                  child: const Text("Volver al menú", style: TextStyle(fontSize: 10)),
                 ),
-              if (isMyTurn) const SizedBox(width: 4),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                ),
-                onPressed: () => setState((){
-                  selected = 0;
-                  disconnect();
-                }),
-                child: const Text("Volver al menú", style: TextStyle(fontSize: 10)),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+          );
+        }
       );
     }
   
@@ -288,6 +293,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
       await _tcp.crearConexion(port!, bindAny: true);
       final initGame = Game(data: {'size': size});
             // Para depuración: mostrar el estado inicial del juego en la consola
+
       print('[---] Game created: \n\n ${initGame.toJson()}');
       _tcp.setInitGame(initGame);
       connectServer();
@@ -300,6 +306,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   void connectServer() async {
     _dataSubClient = _tcpClient.onData.listen((data) {
       // para depuración: mostrar datos recibidos del servidor en la consola
+
       print('[---] Game received from server: \n\n $data');
 
       if(data['type'] == 'connect' && game == null){

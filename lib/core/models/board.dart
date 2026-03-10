@@ -170,7 +170,7 @@ class Board {
     board[r][c].isSelected = true;
   }
 
-  bool foundWord([int? playerId]) {
+  int foundWord([int? playerId]) {
     
     final List<bool> prevIsUsed = [];
     int modified = 0;
@@ -206,8 +206,11 @@ class Board {
       }
 
     foundWords[selectedWord] = playerId ?? 1;
-    return true;
-
+    // ignore: 
+    final pts = selectedWord.length; // Aquí podrías implementar una lógica de puntuación más compleja basada en la longitud de la palabra, letras utilizadas, etc.
+    // ignore: avoid_print
+    print('Palabra encontrada: "$selectedWord" por el jugador ${playerId ?? 1} que vale $pts puntos.');
+    return selectedWord.length;
     } catch (e) {
       // Restaurar los estados isUsed de las celdas que ya se modificaron
       for (final (j, cell) in selectedCells.take(modified).indexed) {

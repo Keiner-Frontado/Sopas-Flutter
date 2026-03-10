@@ -9,10 +9,16 @@ class Game extends ChangeNotifier {
   late Player p1,p2;
   late Board board;
   late Player currentPlayer;
+  late bool gameover;
+  late String mode;
 
   Game({required Map data}) {
+
+    mode = data['mode'] ?? "mp";
     // los jugadores pueden venir en el payload o se crean nuevos si no están presentes
-    if (data['players'] != null) {
+    if (mode == "sp"){
+      p1 = Player(id: 1, name: 'Jugador 1');
+    } else if (data['players'] != null) {
       p1 = Player.fromJson(data['players']['p1']);
       p2 = Player.fromJson(data['players']['p2']);
     } else {
@@ -49,7 +55,14 @@ class Game extends ChangeNotifier {
   }
 
   /// notificar a los listeners que el estado del juego ha cambiado para que puedan actualizar la interfaz en consecuencia
-  void notify() => notifyListeners();
+  void notify(){
+    
+    gameover = board.isfinished();
+    // ignore: avoid_print
+    print("GAMEOVER: $gameover");
+
+    notifyListeners();
+  }
   // Convertir el estado del juego a un formato JSON para enviar a los clientes o guardar el estado.
   Map<String, dynamic> toJson() => {
     'players': {
@@ -68,8 +81,8 @@ class Game extends ChangeNotifier {
   // Este método se puede usar para actualizar el estado del juego desde fuera
   void finishTurn(){
     board.deselectCells();
-    currentPlayer = currentPlayer == p1 ? p2 : p1;
-    notifyListeners();
+    if (mode == "mp") currentPlayer = currentPlayer == p1 ? p2 : p1;
+    notify();
   }
   // Este método se puede usar para actualizar el estado del juego desde fuera
   void updateBoard(Board newBoard){
@@ -98,7 +111,14 @@ class Game extends ChangeNotifier {
         if (type == 'found_word'){
           try{
             final int finderId = data['finderId'];
-            board.foundWord(finderId);
+            print("Jugador $finderId encontró una palabra. Calculando puntos...");
+            final int pts = board.foundWord(finderId);
+            if (finderId == 1) {
+              p1.score += pts;
+            } else {
+              p2.score += pts;
+            }
+            print("Jugador $finderId encontró una palabra de $pts puntos. Puntaje actual - P1: ${p1.score}, P2: ${p2.score}");
           }catch(e){
             throw Exception('Error procesando found_word: $e');
           }
@@ -125,6 +145,7 @@ class Game extends ChangeNotifier {
   // Este método se puede usar para iniciar el juego, asignando el jugador actual y realizando cualquier configuración inicial necesaria
   void startGame() {
     currentPlayer = p1;
+    gameover = false;
   }
 
 }

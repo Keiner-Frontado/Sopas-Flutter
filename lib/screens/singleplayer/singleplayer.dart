@@ -67,6 +67,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
       return BoardCanva(
       game: game!,
       handler: (data){ 
+        // ignore: avoid_print
         print(data);
         } );
     }
@@ -80,7 +81,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
   }
 
   void _createBoard() {
-    game = Game(data: {'size': 10});
+    game = Game(data: {'mode': "sp",'size': 7});
   }
 
   @override

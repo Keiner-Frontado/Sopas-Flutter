@@ -62,14 +62,15 @@ class _BoardState extends State<BoardCanva> {
 
   void _handlePanEnd(DragEndDetails e) {
     if (!widget.allowInteraction) return;
-    bool wordFound = false;
+    int? pts;
     try{
-      wordFound = widget.game.board.foundWord(widget.game.currentPlayer.id);
+      pts = widget.game.board.foundWord(widget.game.currentPlayer.id);
+      widget.game.currentPlayer.score += pts;
     }catch (e){
       // ignore: avoid_print
       print('$e');
     }
-    if (wordFound) {
+    if (pts != null) {
       _notify({'type': 'found_word', 'finderId': widget.game.currentPlayer.id});
       // auto finish turn after a successful word
       // update local state immediately (host / same device)
@@ -82,22 +83,45 @@ class _BoardState extends State<BoardCanva> {
     widget.game.notify();
   }
 
+  Widget setChild(){
+
+    return ListenableBuilder(
+        listenable: widget.game,
+        builder: (context, child) {
+      return widget.game.gameover ? 
+      Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Juego Terminado', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Text('Ganador: ${widget.game.mode == "mp" ? (widget.game.p1.score > widget.game.p2.score ? widget.game.p1.name : widget.game.p2.name) : (widget.game.p1.name)}', style: TextStyle(fontSize: 18)),
+            Text('Puntajes:', style: TextStyle(fontSize: 16)),
+            Text('P1: ${widget.game.p1.score}', style: TextStyle(fontSize: 14)),
+            if (widget.game.mode == "mp") Text('P2: ${widget.game.p2.score}', style: TextStyle(fontSize: 14)),
+          ],
+      )
+      : AbsorbPointer(
+        absorbing: !widget.allowInteraction || widget.game.gameover,
+        child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: _handlePanStart,
+        onPanUpdate: _handlePanUpdate,
+        onPanEnd: _handlePanEnd,
+        child: CustomPaint(
+          painter: painter,
+          foregroundPainter: gamePainter,
+        ),
+      ));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         lastSize = Size(constraints.maxWidth, constraints.maxHeight);
         return SizedBox.expand(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onPanStart: _handlePanStart,
-            onPanUpdate: _handlePanUpdate,
-            onPanEnd: _handlePanEnd,
-            child: CustomPaint(
-              painter: painter,
-              foregroundPainter: gamePainter,
-            ),
-          ),
+          child: setChild(),
         );
       },
     );
