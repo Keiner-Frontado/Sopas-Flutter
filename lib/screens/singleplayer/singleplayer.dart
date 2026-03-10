@@ -36,7 +36,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
               words: game!.board.theme.words,
               foundWords: game!.board.foundWords
             ),
-
+            OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego"))
               
           ]);
         }
@@ -51,12 +51,17 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
 
   Widget? _setFooter(){
     if (game != null){
-      return ElevatedButton(
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 10,
+        children: [
+          OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 12))),
+          ElevatedButton(
         onPressed: () =>
           setState(() => game= null),
 
-        child: Text("Reiniciar Juego"),
-      );
+        child: Text("Reiniciar Juego", style: TextStyle(fontSize: 12)),
+      )]);
     }
     return null;
   }

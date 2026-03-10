@@ -83,7 +83,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   @override
   Widget build(BuildContext context) {
     return AppView(
-      title: Text("MULTIJUGADOR"),
+      title: Text("MULTIJUGADOR", style: styles.Styles.titleText),
       subtitle: _setSubtitle(),
       height: 0.75,
       footer: _setFooter(),
@@ -130,7 +130,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
               words: game!.board.theme.words,
               foundWords: game!.board.foundWords
             ),
-
+            
           ]);
         }
       );}
@@ -174,10 +174,11 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     if (selected == 0) return null;
     // el botón de volver al menú solo se muestra cuando estamos en una partida o en la pantalla de configuración, no en el menú principal
     if (game != null) {
-      final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
+
       return ListenableBuilder(
         listenable: game!,
         builder: (context, child) {
+          final isMyTurn = localPlayerId != null && game!.currentPlayer.id == localPlayerId;
           return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -199,20 +200,15 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
             // el botón de terminar turno solo se habilita si es nuestro turno y el oponente ya se ha conectado (en el caso del host)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 10,
               children: [
-                if (isMyTurn)
+                OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 10))),
+                if (isMyTurn && !game!.gameover)
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    ),
                     onPressed: (_opponentConnected ? _finishTurn : null),
                     child: const Text('Terminar turno', style: TextStyle(fontSize: 10)),
                   ),
-                if (isMyTurn) const SizedBox(width: 4),
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  ),
                   onPressed: () => setState((){
                     selected = 0;
                     disconnect();

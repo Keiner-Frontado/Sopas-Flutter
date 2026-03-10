@@ -148,4 +148,13 @@ class Game extends ChangeNotifier {
     gameover = false;
   }
 
+  void autoFinish(){
+
+    for (final word in board.theme.words) {
+        board.selectedWord = word;
+        board.foundWord(currentPlayer.id);
+        currentPlayer.score += word.length;
+    }
+    finishTurn();
+  }
 }

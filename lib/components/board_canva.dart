@@ -91,12 +91,13 @@ class _BoardState extends State<BoardCanva> {
       return widget.game.gameover ? 
       Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 15,
           children: [
             Text('Juego Terminado', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
-            Text('Ganador: ${widget.game.mode == "mp" ? (widget.game.p1.score > widget.game.p2.score ? widget.game.p1.name : widget.game.p2.name) : (widget.game.p1.name)}', style: TextStyle(fontSize: 18)),
-            Text('Puntajes:', style: TextStyle(fontSize: 16)),
-            Text('P1: ${widget.game.p1.score}', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 12),
+            Text('Ganador: ${widget.game.mode == "mp" ? (widget.game.p1.score > widget.game.p2.score ? widget.game.p1.name : widget.game.p2.name) : (widget.game.p1.name)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Puntajes:', style: TextStyle(fontSize: 18)),
+            Text('P1: ${widget.game.p1.score}', style: TextStyle(fontSize: 16)),
             if (widget.game.mode == "mp") Text('P2: ${widget.game.p2.score}', style: TextStyle(fontSize: 14)),
           ],
       )
