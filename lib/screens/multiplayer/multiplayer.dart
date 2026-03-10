@@ -202,7 +202,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: 10,
               children: [
-                OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 10))),
+                OutlinedButton(onPressed: game!.gameover  ? null : ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 10))),
                 if (isMyTurn && !game!.gameover)
                   ElevatedButton(
                     onPressed: (_opponentConnected ? _finishTurn : null),

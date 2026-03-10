@@ -35,8 +35,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
             ChipRow(
               words: game!.board.theme.words,
               foundWords: game!.board.foundWords
-            ),
-            OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego"))
+            )
               
           ]);
         }
@@ -55,7 +54,7 @@ class _SingleplayerScreen extends State<SingleplayerScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: 10,
         children: [
-          OutlinedButton(onPressed: ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 12))),
+          OutlinedButton(onPressed: game!.gameover  ? null : ()=> game!.autoFinish(), child: Text("Terminar Juego", style: TextStyle(fontSize: 12))),
           ElevatedButton(
         onPressed: () =>
           setState(() => game= null),

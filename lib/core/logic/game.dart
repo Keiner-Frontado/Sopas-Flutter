@@ -152,9 +152,15 @@ class Game extends ChangeNotifier {
 
     for (final word in board.theme.words) {
         board.selectedWord = word;
-        board.foundWord(currentPlayer.id);
+        try{
+          board.foundWord(currentPlayer.id);
+        }catch(e){
+          // ignore: avoid_print
+          print('Error al encontrar palabra $word: $e');
+        }
         currentPlayer.score += word.length;
     }
     finishTurn();
+    notify();
   }
 }
