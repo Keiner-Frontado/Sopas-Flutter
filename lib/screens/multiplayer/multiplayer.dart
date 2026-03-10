@@ -307,7 +307,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
   void createServer() async {
 
     _logSub = _tcp.onLog.listen((log) {
-      // ignore: avoid_print
+      // para depuración: mostrar logs del servidor en la consola
       print('\n $log \n');
     });
 
@@ -316,7 +316,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
       await _tcp.crearConexion(port!, bindAny: true);
       final initGame = Game(data: {'size': size});
-            // ignore: avoid_print
+            // Para depuración: mostrar el estado inicial del juego en la consola
       print('[---] Game created: \n\n ${initGame.toJson()}');
       _tcp.setInitGame(initGame);
 
@@ -330,7 +330,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
 
   void connectServer() async {
     _dataSubClient = _tcpClient.onData.listen((data) {
-      // ignore: avoid_print
+      // para depuración: mostrar datos recibidos del servidor en la consola
       print('[---] Game received from server: \n\n $data');
 
       if(data['type'] == 'connect' && game == null){
@@ -344,11 +344,11 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
             }
           });
         } catch (e) {
-          // ignore: avoid_print
+          // para depuración: mostrar errores al procesar el estado inicial del juego recibido del servidor en la consola
           print('Error procesando connect payload: $e');
         }
       } else if (data['type'] == 'player_joined' && data['player'] == 2) {
-        // host learns that opponent has connected
+        //ahora el host muestra el tablero y espera a que el cliente envíe su primer mensaje 
         setState(() {
           _opponentConnected = true;
         });
@@ -357,7 +357,7 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
           try{
             game!.updateData(data);
           } catch (e) {
-            // ignore: avoid_print
+            // para depuración: mostrar errores al procesar actualizaciones del juego en la consola
             print('Error procesando game update payload: $e');
           }
         });
@@ -365,15 +365,15 @@ class _MultiplayerScreenState extends State<MultiplayerScreen> {
     });
 
 
-    // Subscribe to client logs too so both server and client logs appear
+    // el cliente se conecta al servidor y espera a recibir el estado inicial del juego para asignarlo a su variable de estado
     _logSubClient = _tcpClient.onLog.listen((log) {
-      // ignore: avoid_print
+      // para depuración: mostrar logs del cliente en la consola
       print('\n $log \n');
     });
 
     await _tcpClient.conectar(ip!, port!);
 
-    // If already connected synchronously, set flag
+    // si la conexión es exitosa, el cliente recibirá el estado inicial del juego desde el servidor y se lo asignará a su variable de estado 
     if (_tcpClient.client != null) {
       setState(() => _clientConnected = true);
     }

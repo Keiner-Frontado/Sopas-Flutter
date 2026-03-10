@@ -6,7 +6,7 @@ class Cell {
   String letter;
   bool isSelected;
   bool isUsed;
-  
+  // Constructor para crear una celda con su posición, letra y estados iniciales.
   Cell({
     required this.row,
     required this.col,
@@ -58,12 +58,13 @@ class Board {
   // Guarda el estado previo de isSelected para celdas (clave 'r:c')
   final Map<String, bool> prevIsSelected = {};
 
-
+  // El constructor ahora acepta un tablero pre-creado opcionalmente
+  // para facilitar la creación de un Board a partir de JSON sin perder la lógica de inicialización
   Board({required this.row, required this.col, required this.theme, board}) {
     if ( board != null) {this.board = board;} else {createBoard();}
   }
   
-  // Board is now a plain model — notifications are handled by `Game`.
+
 
   String getThemeName(){
     return theme.theme;
@@ -173,7 +174,7 @@ class Board {
     
     final List<bool> prevIsUsed = [];
     int modified = 0;
-
+    // Validar la palabra seleccionada y actualizar el estado del tablero si es correcta, o revertir cualquier cambio si no lo es.
     try {
       
       if (!theme.words.contains(selectedWord)) {
@@ -238,7 +239,7 @@ class Board {
       selectedWord = '';
       prevIsSelected.clear();
   }
-
+  // Este método se puede usar para actualizar la selección de celdas desde fuera del Board, por ejemplo al recibir un update de otro jugador en modo multijugador
   updateSelectedCells(List<Cell> selectedCells) {
     this.selectedCells = selectedCells;
   }
@@ -274,6 +275,7 @@ class Board {
       throw Exception('Board.fromJson: no se encontró la clave "theme"');
     }
 
+    // El constructor de Board se encarga de asignar la matriz y el tema correctamente, sin llamar a createBoard()
     final boardObj = Board(row: rows, col: cols, theme: theme, board: matrix);
     if (json['foundWords'] != null) {
       try {

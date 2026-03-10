@@ -11,7 +11,7 @@ class Game extends ChangeNotifier {
   late Player currentPlayer;
 
   Game({required Map data}) {
-    // load players if provided, otherwise use defaults
+    // los jugadores pueden venir en el payload o se crean nuevos si no están presentes
     if (data['players'] != null) {
       p1 = Player.fromJson(data['players']['p1']);
       p2 = Player.fromJson(data['players']['p2']);
@@ -20,7 +20,7 @@ class Game extends ChangeNotifier {
       p2 = Player(id: 2, name: 'Jugador 2');
     }
 
-    // board either comes from payload or is generated
+    // el tablero puede venir en el payload o se crea uno nuevo si no está presente
     if (data['board'] != null) {
       board = Board.fromJson(data['board']);
     } else {
@@ -30,11 +30,11 @@ class Game extends ChangeNotifier {
         col: data['size'] > 7 ? data['size'] : 7,
         theme: Themes.selectTheme(),
       );
-      // ignore: avoid_print
+      // Para depuración: mostrar el tablero generado en la consola
       print("\n\nRANDOM BOARD\n\n");
     }
 
-    // determine current player if payload includes it otherwise start fresh
+    // El jugador actual se determina por el payload o se asigna el jugador 1 por defecto si no se especifica.
     if (data['players'] != null && data['currentPlayer'] != null) {
       try {
         final cp = Player.fromJson(data['currentPlayer']);
@@ -48,9 +48,9 @@ class Game extends ChangeNotifier {
     }
   }
 
-  /// Notify listeners (convenience wrapper)
+  /// notificar a los listeners que el estado del juego ha cambiado para que puedan actualizar la interfaz en consecuencia
   void notify() => notifyListeners();
-
+  // Convertir el estado del juego a un formato JSON para enviar a los clientes o guardar el estado.
   Map<String, dynamic> toJson() => {
     'players': {
       'p1': p1.toJson(),
@@ -65,13 +65,13 @@ class Game extends ChangeNotifier {
       data: json,
     );
   }
-
+  // Este método se puede usar para actualizar el estado del juego desde fuera
   void finishTurn(){
     board.deselectCells();
     currentPlayer = currentPlayer == p1 ? p2 : p1;
     notifyListeners();
   }
-
+  // Este método se puede usar para actualizar el estado del juego desde fuera
   void updateBoard(Board newBoard){
     board = newBoard;
     notify();
@@ -122,6 +122,7 @@ class Game extends ChangeNotifier {
         notify();
   }
 
+  // Este método se puede usar para iniciar el juego, asignando el jugador actual y realizando cualquier configuración inicial necesaria
   void startGame() {
     currentPlayer = p1;
   }
